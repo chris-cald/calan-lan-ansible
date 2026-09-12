@@ -42,7 +42,7 @@
     proxmox_vm_boot: order=virtio0
     proxmox_vm_cicustom: "vendor=local:snippets/vendor.yaml"
     proxmox_vm_ciuser: sysadmin
-    proxmox_vm_cipassword: $(openssl passwd -6 $CLEARTEXT_PASSWORD)
+    proxmox_vm_cipassword: "{{ lookup('ansible.builtin.env', 'PROXMOX_VM_CIPASSWORD') }}"
     proxmox_vm_searchdomains: null
     proxmox_vm_nameservers: null
 

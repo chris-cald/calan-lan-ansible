@@ -43,13 +43,19 @@
     proxmox_vm_boot: order=virtio0
     proxmox_vm_cicustom: "vendor=local:snippets/vendor.yaml"
     proxmox_vm_ciuser: sysadmin
-    proxmox_vm_cipassword: $(openssl passwd -6 $CLEARTEXT_PASSWORD)
+    proxmox_vm_cipassword: "{{ lookup('ansible.builtin.env', 'PROXMOX_VM_CIPASSWORD') }}"
     proxmox_vm_searchdomains: null
     proxmox_vm_nameservers: null
 
     proxmox_disk_disk: scsi1
     proxmox_disk_storage: local-lvm
     proxmox_disk_size: null
+  pre_tasks:
+    - name: Require the cloud-init password
+      ansible.builtin.assert:
+        that: proxmox_vm_cipassword | length > 0
+        fail_msg: Set PROXMOX_VM_CIPASSWORD before running this playbook.
+
   tasks:
     - name: Download Debian image
       debugger: on_failed
