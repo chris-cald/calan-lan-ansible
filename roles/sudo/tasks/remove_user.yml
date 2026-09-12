@@ -1,0 +1,4 @@
+- name: Ensure user '{{ privileged_user }}' does not exist
+  user:
+    name: "{{ privileged_user }}"
+    state: absent

@@ -1,0 +1,55 @@
+# roles/privileged/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/privileged/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the privileged role
+    description:
+      - This is the main entrypoint for the C(privileged) role. It provides a set of options that can be used to configure privileged access for users.
+      - By default, it ensures the existence of the specified user and adds them to the appropriate group. Passwordless privileged access can optionally
+        configured by setting P(password_required) to false.
+    author:
+      - Chris Caldwell
+    options:
+      privileged_user:
+        type: "str"
+        required: true
+        description: The username for which privileged access is being configured. This user will be created if it does not exist on the system.
+
+      privileged_group:
+        type: "str"
+        required: false
+        description: \
+          The group which provides privileged access. If not specified, system information will be used \
+          to determine the best option. For example, Debian/Ubuntu will use `sudo`; CentOS/RHEL will use `wheel`.
+
+      password_required:
+        type: "bool"
+        required: false
+        default: true
+        description: Should the user be required to enter a password for privileged access? Defaults to true.
+
+  # roles/privileged/tasks/deprivilege.yml entry point
+  alternate:
+    short_description: Removes privileged access for the specified user.
+    description:
+    - Removes privileged access for the specified user by removing them from the system-specific privileged group and
+      deleting any passwordless sudo configuration.
+    options:
+      privileged_user:
+        type: "str"
+        required: true
+        description: The username for which privileged access is to be removed. This user will not be removed unless otherwise specified.
+
+      privileged_group:
+        type: "str"
+        required: false
+        description: \
+          The group which provides privileged access. If not specified, system information will be used \
+          to determine the best option. For example, Debian/Ubuntu will use `sudo`; CentOS/RHEL will use `wheel`.
+
+      preserve_user:
+        type: "bool"
+        required: false
+        default: true
+        description: Should the user be preserved after removing privileges? Defaults to true.

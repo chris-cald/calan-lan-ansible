@@ -1,0 +1,6 @@
+- name: Remove user '{{ privileged_user }}' from the group '{{ group }}'
+  become: true
+  ansible.builtin.command: "gpasswd -d {{ privileged_user }} {{ group }}"
+  register: command_result
+  changed_when: "not 'is not a member of' in command_result.stderr"
+  failed_when: false

@@ -1,0 +1,18 @@
+---
+# Ensure user '{{ privileged_user }}' exists and has privileged access
+- name: Ensure user exists
+  user:
+    name: "{{ privileged_user }}" # Replace with desired username
+    system: true
+
+- name: Ensure user is in sudo group
+  user:
+    name: "{{ privileged_user }}"
+    groups: "{{ privilege_group }}" 
+    append: yes
+
+- name: Allow passwordless privilege
+  ansible.builtin.import_tasks: passwordless_privilege.yml
+  vars:
+    state: present
+  when: not password_required
