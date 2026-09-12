@@ -4,19 +4,26 @@
   vars:
     pod_name: semaphore
     admin_user: admin
-    admin_password: semaphore
     admin_fullname: Admin User
     admin_email: admin@example.com
     data_volume_host_path: /tmp/semaphore_data
     db_volume_host_path: /tmp/semaphore_db
     host_port: 3000 #"{{ host_port | default(3000) }}"
     db_name: semaphore
-    db_password: password
     db_user: semaphore
     pod_state: created
     semaphore_version: latest
     postgres_version: latest
   tasks:
+  - name: Require non-default Semaphore credentials
+    ansible.builtin.assert:
+      that:
+        - semaphore_admin_password is defined
+        - semaphore_admin_password | length > 0
+        - semaphore_db_password is defined
+        - semaphore_db_password | length > 0
+      fail_msg: Define semaphore_admin_password and semaphore_db_password in inventory or an encrypted vars file.
+
   - name: Create the containing pod
     containers.podman.podman_pod:
       name: "{{ pod_name }}"
@@ -41,7 +48,7 @@
       image: docker.io/postgres:{{ postgres_version }}
       env:
         POSTGRES_DB: "{{ db_name }}"
-        POSTGRES_PASSWORD: "{{ db_password }}"
+        POSTGRES_PASSWORD: "{{ semaphore_db_password }}"
         POSTGRES_USER: "{{ db_user }}"
     when: pod_state != 'absent'
   - name: Create containers attached to the pod
@@ -53,10 +60,10 @@
         SEMAPHORE_DB_DIALECT: postgres
         #SEMAPHORE_DB_HOST: postgres
         SEMAPHORE_DB_NAME: "{{ db_name }}"
-        SEMAPHORE_DB_PASS: "{{ db_password }}"
+        SEMAPHORE_DB_PASS: "{{ semaphore_db_password }}"
         SEMAPHORE_DB_USER: "{{ db_user }}"
         SEMAPHORE_ADMIN: "{{ admin_user }}"
-        SEMAPHORE_ADMIN_PASSWORD: "{{ admin_password }}"
+        SEMAPHORE_ADMIN_PASSWORD: "{{ semaphore_admin_password }}"
         SEMAPHORE_ADMIN_NAME: "{{ admin_fullname }}"
         SEMAPHORE_ADMIN_EMAIL: "{{ admin_email }}"
         SEMAPHORE_PORT: "{{ host_port }}"
