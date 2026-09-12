@@ -1,0 +1,12 @@
+---
+- name: Run maintenance tasks on proxmox nodes
+  hosts: device_roles_proxmox_node
+  tasks:
+    - ansible.builtin.import_tasks: apt.yml
+    - name: Update package lists
+      become: true
+      ansible.builtin.apt:
+        cache_valid_time: 3600
+        upgrade: safe
+  handlers:
+    - ansible.builtin.import_tasks: apt_handlers.yml

@@ -1,0 +1,62 @@
+---
+- name: Manage apt packages
+  become: true
+  block:
+    - name: Ensure subscription repo configured if licensed
+      when: proxmox_license is defined and proxmox_license
+      block:
+        - name: Ensure subscription repo configured on proxmox server
+          ansible.builtin.apt_repository:
+            repo: deb http://download.proxmox.com/debian/pve bookworm subscription
+            state: present
+        - name: Ensure community repo not configured on proxmox server
+          ansible.builtin.apt_repository:
+            repo: deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription
+            state: absent
+    - name: Ensure community repo configured if not licensed
+      when: proxmox_license is not defined or not proxmox_license
+      block:
+        - name: Ensure subscription repo not configured on proxmox server
+          ansible.builtin.apt_repository:
+            repo: deb http://download.proxmox.com/debian/pve bookworm subscription
+            state: absent
+        - name: Ensure community repo configured on proxmox server
+          ansible.builtin.apt_repository:
+            repo: deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription
+            state: present
+        # Based on sed script from https://leo.leung.xyz/wiki/Proxmox
+        # sed -Ezi.bak "s/(Ext.Msg.show\(\{\s+title: gettext\('No valid sub)/void\(\{ \/\/\1/g" /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+        - name: Disable subscription nag
+          become: true
+          ansible.builtin.replace:
+            path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+            regexp: "(?s)^(\\s*)(Ext.Msg.show\\(\\{.*?title: gettext\\('No valid subscription'\\),)"
+            replace: "\\1void({ //\\2"
+            backup: true
+    - name: Apply distro upgrade, if needed
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+    - name: Ensure core packages are installed
+      ansible.builtin.apt:
+        autoremove: true
+        autoclean: true
+        name:
+          - git
+    - name: Check if a reboot is needed
+      register: reboot_required_file
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+        get_checksum: false
+        checksum_algorithm: md5
+      notify:
+        - reboot
+    - name: Reboot
+      ansible.builtin.reboot:
+        msg: "Rebooting to apply dist and apt changes"
+        connect_timeout: 5
+        pre_reboot_delay: 0
+        post_reboot_delay: 10
+      when: reboot_required_file.stat.exists
+    - name: Flush handlers to force reboot
+      ansible.builtin.meta: flush_handlers
