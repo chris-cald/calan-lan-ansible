@@ -1,0 +1,6 @@
+[submodule "playbooks/k3s-ansible"]
+	path = playbooks/k3s-ansible
+	url = https://github.com/techno-tim/k3s-ansible.git
+[submodule "playbooks/netbox-proxmox"]
+	path = playbooks/netbox-proxmox
+	url = https://github.com/squirrel289/netbox-proxmox.git
