@@ -1,0 +1,99 @@
+---
+- name: Create a Proxmox VM
+  hosts: proxmox
+  vars_files:
+  - vars.yml
+  #become: true
+  #become_user: "{{ deployer_user }}"
+  gather_facts: false
+  vars:
+    url_os: https://some.url.invalid/os_image.qcow2
+    url_dest_name: os_image.qcow2
+
+    proxmox_api_port: '8006'
+    proxmox_api_host: 'your_proxmox_host'
+    proxmox_api_user: 'your_proxmox_username'
+    proxmox_api_password: 'your_proxmox_password'
+    proxmox_api_id: null
+    proxmox_api_secret: null
+
+    proxmox_vm_node: 'proxmox_node_name'
+    proxmox_vm_id: 9000
+    proxmox_vm_tags: 'cloudinit'
+    proxmox_vm_name: 'debian-12-amd64-cloudinit-template'
+    proxmox_vm_cores: 1
+    proxmox_vm_memory: 512
+    proxmox_vm_ostype: l26
+    proxmox_vm_cpu_type: host
+    proxmox_vm_cpu_sockets: 1
+    proxmox_vm_cpu_cores: 1
+    proxmox_vm_agent: 1
+    proxmox_vm_bios: ovmf
+    proxmox_vm_machine_type: q35
+    proxmox_vm_vga: serial0
+    proxmox_vm_serial: {"serial0":"socket"}
+    proxmox_vm_efidisk: {"storage":"local-lvm:0","pre_enrolled_keys":"0"}
+    proxmox_vm_scsi: {"scsi1":"local-lvm:cloudinit"}
+    proxmox_vm_scsihw: virtio-scsi-pci
+    proxmox_vm_virtio: {"virtio0":"local-lvm:vm-{{ proxmox_vm_id }}-disk-1,discard=on"}
+    proxmox_vm_ssh_key: ~/.ssh/authorized_keys
+    proxmox_vm_net: {"net0": "virtio,bridge=vmbr0"}
+    proxmox_vm_ipconfig: {"ipconfig0": "ip=dhcp"}
+    proxmox_vm_boot: order=virtio0
+    proxmox_vm_cicustom: "vendor=local:snippets/vendor.yaml"
+    proxmox_vm_ciuser: sysadmin
+    proxmox_vm_cipassword: $(openssl passwd -6 $CLEARTEXT_PASSWORD)
+    proxmox_vm_searchdomains: null
+    proxmox_vm_nameservers: null
+
+    proxmox_disk_disk: scsi1
+    proxmox_disk_storage: local-lvm
+    proxmox_disk_size: null
+
+  tasks:
+    - name: Create new VM using Cloud-Init with an ssh key
+      debugger: on_failed
+      community.general.proxmox_kvm:
+
+        # Credentials and host/node to work from
+        api_host: "{{ proxmox_api_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        #api_password: "{{ proxmox_api_password }}"
+        api_token_id: "{{ proxmox_api_id }}"
+        api_token_secret: "{{ proxmox_api_secret }}"
+        node: "{{ proxmox_vm_node }}"
+
+        # Basic VM info
+        tags: "{{ proxmox_vm_tags }}"
+        vmid: "{{ proxmox_vm_id }}"
+        name: "{{ proxmox_vm_name }}"
+        ostype: "{{ proxmox_vm_ostype }}"
+        agent: "{{ proxmox_vm_agent }}"
+        state: present
+
+        # Hardware info
+        cpu: "{{ proxmox_vm_cpu_type }}"
+        sockets: "{{ proxmox_vm_cpu_sockets }}"
+        cores: "{{ proxmox_vm_cpu_cores }}"
+        memory: "{{ proxmox_vm_memory }}"
+        bios: "{{ proxmox_vm_bios }}"
+        machine: "{{ proxmox_vm_machine_type }}"
+        vga: "{{ proxmox_vm_vga }}"
+        serial: "{{ proxmox_vm_serial }}"
+        efidisk0: "{{ proxmox_vm_efidisk }}"
+        scsi: "{{ proxmox_vm_scsi }}"
+        scsihw: "{{ proxmox_vm_scsihw }}"
+        boot: "{{ proxmox_vm_boot }}"
+        virtio: "{{ proxmox_vm_virtio }}"
+
+        # Storage and network info
+        sshkeys: "{{ proxmox_vm_ssh_key }}"
+        searchdomains: "{{ proxmox_vm_searchdomains }}"
+        nameservers: "{{ proxmox_vm_nameservers }}"
+        net: "{{ proxmox_vm_net }}"
+        ipconfig: "{{ proxmox_vm_ipconfig }}"
+
+        # Cloud-init info
+        cicustom: "{{ proxmox_vm_cicustom }}"
+        ciuser: "{{ proxmox_vm_ciuser }}"
+        cipassword: "{{ proxmox_vm_cipassword }}"
