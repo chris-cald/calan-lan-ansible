@@ -1,0 +1,49 @@
+- name: Configure MicroK8s nodes
+  hosts: mk8s
+
+  debugger: on_failed
+
+  environment:
+    PATH: "{{ ansible_env.PATH }}:/snap/bin"
+
+  roles:
+  - role: microk8s
+    vars:
+      # plugin configuration
+      microk8s_plugins:
+        dns: "1.1.1.1"
+        ingress: true # Ingress controller for external access
+        istio: true # Core Istio service mesh services
+
+        # defaults
+        #dns: true # CoreDNS
+        host-access: false # Allow Pods connecting to Host services smoothly
+        #ingress: false # Ingress controller for external access
+        metrics-server: false # K8s Metrics Server for API access to service metrics
+        rbac: false # Role-Based Access Control for authorisation
+        hostpath-storage: false # Storage class; allocates storage from host directory
+        registry: false # Private image registry exposed on localhost:32000
+        dashboard: false # The Kubernetes dashboard
+        ambassador: false # Ambassador API Gateway and Ingress
+        cilium: false # SDN, fast with full network policy
+        fluentd: false # Elasticsearch-Fluentd-Kibana logging and monitoring
+        gpu: false # Automatic enablement of Nvidia CUDA
+        helm: false # Helm 2 - the package manager for Kubernetes
+        helm3: true # Helm 3 - Kubernetes package manager
+        #istio: false # Core Istio service mesh services
+        jaeger: false # Kubernetes Jaeger operator with its simple config
+        knative: false # The Knative framework on Kubernetes.
+        kubeflow: false # Kubeflow for easy ML deployments
+        linkerd: false # Linkerd is a service mesh for Kubernetes and other frameworks
+        metallb: false # Loadbalancer for your Kubernetes cluster
+        multus: false # Multus CNI enables attaching multiple network interfaces to pods
+        prometheus: false # Prometheus operator for monitoring and logging
+        traefik: false # another ingress
+        portainer: false # Container management dashboard
+        keda: false # Kubernetes Event-driven Autoscaling operator.
+        kata: false # A secure container runtime with lightweight virtual machines
+        openebs: false # openebs storage
+        openfaas: false # serverless
+
+      # users to make members of microk8s group
+      microk8s_users: [chris]
