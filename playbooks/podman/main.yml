@@ -1,0 +1,9 @@
+---
+- name: Manage packages on all hosts
+  hosts: all
+  tasks:
+    - name: Install Podman package
+      become: yes
+      package:
+        name: podman
+        state: latest

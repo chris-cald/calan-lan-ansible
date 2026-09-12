@@ -1,0 +1,111 @@
+---
+- name: Create and start the Semaphore pod
+  hosts: all
+  vars:
+    pod_name: semaphore
+    admin_user: admin
+    admin_password: semaphore
+    admin_fullname: Admin User
+    admin_email: admin@example.com
+    data_volume_host_path: /tmp/semaphore_data
+    db_volume_host_path: /tmp/semaphore_db
+    host_port: 3000 #"{{ host_port | default(3000) }}"
+    db_name: semaphore
+    db_password: password
+    db_user: semaphore
+    pod_state: created
+    semaphore_version: latest
+    postgres_version: latest
+  tasks:
+  - name: Create the containing pod
+    containers.podman.podman_pod:
+      name: "{{ pod_name }}"
+      state: "{{ pod_state }}"
+      network: host
+      share: net
+      userns: auto
+      security_opt:
+        - seccomp=unconfined
+        - apparmor=unconfined
+      hostname: semaphore
+      dns:
+        - 1.1.1.1
+      label:
+        somekey: someval
+      add_host:
+        - "google:5.5.5.5"
+  - name: Create database
+    containers.podman.podman_container:
+      name: "{{ pod_name }}_db"
+      pod: "{{ pod_name }}"
+      image: docker.io/postgres:{{ postgres_version }}
+      env:
+        POSTGRES_DB: "{{ db_name }}"
+        POSTGRES_PASSWORD: "{{ db_password }}"
+        POSTGRES_USER: "{{ db_user }}"
+    when: pod_state != 'absent'
+  - name: Create containers attached to the pod
+    containers.podman.podman_container:
+      name: "{{ pod_name }}_web"
+      pod: "{{ pod_name }}"
+      image: public.ecr.aws/semaphore/pro/server:{{ semaphore_version }}
+      env:
+        SEMAPHORE_DB_DIALECT: postgres
+        #SEMAPHORE_DB_HOST: postgres
+        SEMAPHORE_DB_NAME: "{{ db_name }}"
+        SEMAPHORE_DB_PASS: "{{ db_password }}"
+        SEMAPHORE_DB_USER: "{{ db_user }}"
+        SEMAPHORE_ADMIN: "{{ admin_user }}"
+        SEMAPHORE_ADMIN_PASSWORD: "{{ admin_password }}"
+        SEMAPHORE_ADMIN_NAME: "{{ admin_fullname }}"
+        SEMAPHORE_ADMIN_EMAIL: "{{ admin_email }}"
+        SEMAPHORE_PORT: "{{ host_port }}"
+    when: pod_state != 'absent'
+  - name: Generate systemd unit for pod
+    containers.podman.podman_generate_systemd:
+      name: "{{ pod_name }}"
+      pod_prefix: "{{ pod_name }}"
+      separator: "-"
+    when: pod_state != 'absent'
+  
+  - name: Systemd unit files for postgres container must exist
+    containers.podman.podman_generate_systemd:
+      name: "{{ pod_name }}"
+      dest: ~/.config/systemd/user/
+      restart_policy: "always"
+    when: pod_state != 'absent'
+  
+  - name: Postgres container must be started and enabled on systemd
+    ansible.builtin.systemd:
+      name: "{{ item }}"
+      scope: user
+      daemon_reload: true
+      state: started
+      enabled: true
+    loop:
+      - "pod-{{ pod_name }}"
+      - "container-{{ pod_name }}_db"
+      - "container-{{ pod_name }}_web"
+    when: pod_state != 'absent'
+
+  - name: Postgres container must be stopped and disabled on systemd
+    ansible.builtin.systemd:
+      name: "{{ item }}"
+      scope: user
+      daemon_reload: true
+      state: stopped
+      enabled: false
+    loop:
+      - "pod-{{ pod_name }}"
+      - "container-{{ pod_name }}_db"
+      - "container-{{ pod_name }}_web"
+    when: pod_state == 'absent'
+  - name: Remove file (delete file)
+    ansible.builtin.file:
+      path: ~/.config/systemd/user/{{ item }}.service
+      state: absent
+    loop:
+      - "pod-{{ pod_name }}"
+      - "container-{{ pod_name }}_db"
+      - "container-{{ pod_name }}_web"
+    when: pod_state == 'absent'
