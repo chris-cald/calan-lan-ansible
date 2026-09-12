@@ -1,0 +1,19 @@
+---
+- name: Remove AWX
+  hosts: mk8s
+  vars:
+    awx_namespace: awx
+
+  environment:
+    PATH: "{{ ansible_env.PATH }}:/snap/bin"
+
+  tasks:
+    - name: Remove awx deployment 
+      shell: kubectl delete all --all -n {{ awx_namespace }} 
+      ignore_errors: yes
+
+    - name: Ensure Kustomize bin is removed
+      file:
+        path: /usr/local/bin/kustomize
+        state: absent
+      ignore_errors: yes

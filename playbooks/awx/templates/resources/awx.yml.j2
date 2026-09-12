@@ -1,0 +1,12 @@
+---
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: awx
+spec:
+  service_type: nodeport
+  nodeport_port: 30060
+  postgres_storage_class: "{{ postgres_storage_class }}"
+  projects_storage_class: "{{ projects_storage_class }}"
+  projects_persistence: true
+  projects_existing_claim: awx-projects-claim

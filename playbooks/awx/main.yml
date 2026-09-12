@@ -1,0 +1,76 @@
+# Loosely bsed on https://sysadmin.info.pl/en/blog/how-to-install-awx-using-ansible-playbook/
+---
+- name: Install AWX
+  hosts: mk8s
+  vars:
+    awx_namespace: awx
+    working_path: ~/{{ awx_namespace }}
+    postgres_storage_class: awx-postgres-storage
+    postgres_storage_path: /data/postgres
+    projects_storage_class: awx-project-storage
+    projects_storage_path: /data/projects
+    projects_storage_size: 2Gi
+
+#  debugger: on_failed
+
+  environment:
+    PATH: "{{ ansible_env.PATH }}:/snap/bin"
+    # workaround per https://github.com/canonical/microk8s/issues/3988#issuecomment-2525533962
+    GIT_EXEC_PATH: /snap/microk8s/current/usr/lib/git-core
+
+  tasks:
+    - name: Gather package facts
+      package_facts:
+        manager: auto
+
+    - name: Ensure dependencies are installed
+      become: yes
+      package:
+        name:
+        - git
+        state: latest
+      when: "'git' not in ansible_facts.packages"
+
+    - name: Ensure working directory exists
+      file:
+        path: "{{ working_path }}/resources"
+        state: directory
+
+    - name: Generate AWX resource files from template
+      template:
+        dest: "{{ working_path }}/resources/{{ item.dest }}"
+        src: "resources/{{ item.src }}"
+      loop:
+      - dest: "awx.yml"
+        src: "awx.yml.j2"
+
+      - dest: "project-pvc.yml"
+        src: "project-pvc.yml.j2"
+
+      - dest: "project-pv.yml"
+        src: "project-pv.yml.j2"
+
+      - dest: "postgres-pv.yml"
+        src: "postgres-pv.yml.j2"
+
+    - name: Fetch latest release metadata of AWX Operator
+      uri:
+        url: https://api.github.com/repos/ansible/awx-operator/releases/latest
+        return_content: true
+      register: latest_release
+      # this should really check the current running version and determine if it is different
+      # but since AWX has been frozen since early 2024, it seems unlikely to change
+      changed_when: false
+
+    - name: Create kustomization.yaml
+      template:
+        dest: "{{ working_path }}/kustomization.yaml"
+        src: "kustomization.yaml.j2"
+
+    - name: Ensure namespace {{ awx_namespace }} exists
+      shell:
+        cmd: kubectl create namespace {{ awx_namespace }} --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Apply Kustomize configuration
+      shell:
+        cmd: kubectl apply -k {{ working_path }}
