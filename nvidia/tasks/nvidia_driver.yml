@@ -1,0 +1,39 @@
+---
+- name: Blacklist the nouveau driver module
+  become: true
+  community.general.kernel_blacklist:
+    name: nouveau
+    state: present
+    blacklist_file: /etc/modprobe.d/blacklist-nouveau.conf
+  notify:
+    - update-initramfs
+    - reboot
+  tags:
+    - nvidia
+- name: If specified version is different than installed, install NVIDIA driver
+  when: target_nvidia_driver_version not in nvidia_driver_version
+  block:
+    - name: Copy the NVIDIA driver to the host
+      become: true
+      ansible.builtin.copy:
+        src: "{{ nvidia_driver_path }}"
+        dest: "/opt/nvidia_driver.run"
+        mode: "0755"
+      tags:
+        - nvidia
+    - name: Run Driver Pre-install tasks
+      ansible.builtin.include_tasks: "{{ nvidia_preinstall_tasks_path }}"
+      when:
+        - nvidia_preinstall_tasks_path is defined
+        - lookup('file', nvidia_preinstall_tasks_path, errors='warn')
+    - name: Install NVIDIA driver
+      become: true
+      ansible.builtin.command:
+        cmd: "/opt/nvidia_driver.run --dkms -m=kernel"
+      register: nvidia_driver_install
+      changed_when: 'nvidia_driver_install.stdout | regex_search("Installation of the NVIDIA Accelerated Graphics Driver .*? is now complete\.")'
+      tags:
+        - nvidia
+      notify:
+        - nvidia-driver-installed
+        - reboot

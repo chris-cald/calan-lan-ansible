@@ -1,0 +1,50 @@
+---
+- name: Get version of currently installed NVIDIA driver
+  become: true
+  ansible.builtin.shell:
+    cmd: lsmod | grep -iE '^nvidia\b'
+  changed_when: false
+  check_mode: false
+  register: nvidia_driver_loaded
+- name: Normalize nvidia_driver_loaded fact
+  ansible.builtin.set_fact:
+    nvidia_driver_loaded: "{{ nvidia_driver_loaded.stdout != '' }}"
+- name: Get version of currently installed NVIDIA driver
+  when: nvidia_driver_loaded
+  become: true
+  ansible.builtin.command: modinfo --field version nvidia
+  check_mode: false
+  changed_when: false
+  register: nvidia_driver_version
+- name: Normalize nvidia_driver_version fact
+  ansible.builtin.set_fact:
+    nvidia_driver_version: "{{ nvidia_driver_version.stdout | default('') }}"
+- name: List all installed NVIDIA GPUs
+  ansible.builtin.shell:
+    cmd: lspci -nn | grep -i vga.*nvidia
+  register: nvidia_gpus
+  check_mode: false
+  changed_when: false
+  # TODO: figure out how to detect native support
+- name: Determine if vgpu is natively supported by all installed NVIDIA GPUs
+  ansible.builtin.set_fact:
+    vgpu_fully_supported: false
+# Starting from 17.0, all Pascal (and older) GPUs are not officially supported anymore.
+# If you still want to use them, stay on the LTS 16.x branch.
+# regex based on https://nouveau.freedesktop.org/CodeNames.html
+- name: Determine if any installed NVIDIA GPUs are Pascal or older
+  # yamllint disable rule:line-length
+  ansible.builtin.set_fact:
+    legacy_gpu: |-
+      {{
+        item is match(
+          "^\d\d:\d\d\.\d VGA compatible controller: NVIDIA Corporation (NV(0[1-5A]|1[01578AF]|2[058A]|3[014-6]|44A|4[0-4])|G(7[0-3]|8[046]|9[2468])|MCP(6[178]|7[3789A]|89)|GF1(0[0468]|1[04679])|C51|GT2(00|1[568])|GK(10[467]|110B?|208B?|20A|210)|GM(10[78]|20[046B])|GP10[24678]).*"
+        ) | default(false)
+      }}
+  # yamllint enable rule:line-length
+  loop: "{{ nvidia_gpus.stdout_lines }}"
+  loop_control:
+    break_when: legacy_gpu
+- name: Set the target NVIDIA version based of provided nvidia_driver_path
+  ansible.builtin.set_fact:
+    target_nvidia_driver_version: "{{ nvidia_driver_path | regex_search('NVIDIA-Linux-x86_64-(\\d+\\.\\d+\\.\\d+)') }}"

@@ -1,0 +1,5 @@
+---
+- name: "Test"
+  listen: test2
+  ansible.builtin.debug:
+    msg: "test-handler"

@@ -1,0 +1,6 @@
+---
+- ansible.builtin.import_playbook: "{{ playbook_name }}-playbook.yml"
+  vars:
+    playbook_name: "test"
+  tags:
+    - skip_ansible_lint

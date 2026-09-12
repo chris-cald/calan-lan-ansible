@@ -1,0 +1,5 @@
+---
+roles:
+  - name: robertdebock.cargo
+collections:
+  - name: community.general

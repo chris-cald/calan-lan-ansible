@@ -1,0 +1,24 @@
+---
+- name: "Test"
+  hosts: localhost
+  gather_facts: false
+  vars:
+    nvidia_preinstall_tasks_pathi: "tasks/testi.yml"
+  tasks:
+    - name: Run Driver Pre-install tasks
+      ansible.builtin.include_tasks: "{{ nvidia_preinstall_tasks_path }}"
+      when:
+        - nvidia_preinstall_tasks_path is defined
+        - lookup('file', nvidia_preinstall_tasks_path, errors='warn')
+      tags: test
+    - name: Test
+      ansible.builtin.debug:
+        msg: "Test task executed"
+      tags: Test
+      changed_when: true
+      notify: Test
+  #    ansible.builtin.import_tasks: "{{ nvidia_preinstall_tasks_path | default(lookup('pipe', 'pwd') ~ '/hooks/empty.yml') }}"
+  handlers:
+    - name: Test
+      listen: test1
+      ansible.builtin.include_tasks: handlers/test.yml

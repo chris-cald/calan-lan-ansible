@@ -1,0 +1,24 @@
+---
+- name: Configure IOMMU for Intel and AMD systems
+  block:
+    - name: Set bootloader line prefix depending on bootloader
+      ansible.builtin.set_fact:
+        bootloader_prefix: '{{ "root" if bootloader == "systemd-boot" else "GRUB_CMDLINE_LINUX_DEFAULT" }}'
+    - name: Set IOMMU options for Intel systems
+      ansible.builtin.lineinfile:
+        path: '{{ "/etc/kernel/cmdline" if bootloader == "systemd-boot" else "/etc/default/grub" }}'
+        regexp: '^{{ bootloader_prefix }}="\s*((?:\S+\s)*?)\s*(?:(?:intel|amd)_iommu=\S+\b)?\s*((?:\b\S+)*?)?\s*"'
+        line: '{{ bootloader_prefix }}="\g<1>\g<2> {{ cpu_prefix }}_iommu=on"'
+        backrefs: true
+      become: true
+      when: "'GenuineIntel' in ansible_processor"
+      notify: reload-boot-settings
+    - name: Set systemd-boot option to use IOMMU in pass-through mode
+      ansible.builtin.lineinfile:
+        path: /etc/kernel/cmdline
+        regexp: '^{{ bootloader_prefix }}="\s*((?:\S+\s)*?)\s*(?:(?:intel|amd)_iommu=\S+\b)?\s*((?:\b\S+)*?)?\s*"'
+        line: '{{ bootloader_prefix }}="\g<1>\g<2> {{ cpu_prefix }}_iommu=on"'
+        backrefs: true
+      become: true
+      when: "enable_iommu_passthrough | default(false)"
+      notify: reload-boot-settings

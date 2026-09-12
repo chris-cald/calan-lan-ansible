@@ -1,0 +1,22 @@
+---
+- name: Configure guest system for NVIDIA
+  hosts:
+    - device_roles_vgpu_guest
+    - device_roles_nvidia_gpu_guest
+  vars_prompt:
+    - name: nvidia_driver_path
+      prompt: "Path to the NVIDIA driver file (e.g., /path/to/NVIDIA-Linux-x86_64-570.148.08-grid.run)"
+      private: false
+      default: ~/Downloads/NVIDIA-GRID-Linux-KVM-570.148.06-570.148.08-573.07/Guest_Drivers/NVIDIA-Linux-x86_64-570.148.08-grid.run
+  tasks:
+    - name: Ensure NVIDIA driver installed on guest
+      ansible.builtin.include_tasks:
+        file: tasks/nvidia_driver.yml
+        apply:
+          tags: guest
+  handlers:
+    - name: Import NVENC unlock patch
+      listen: nvidia-driver-installed
+      ansible.builtin.include_tasks: tasks/nvidia_enc_unlock_patch.yml
+    - name: Import NVIDIA driver handlers
+      ansible.builtin.import_tasks: handlers/nvidia_driver_handlers.yml

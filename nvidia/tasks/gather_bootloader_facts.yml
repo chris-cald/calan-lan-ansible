@@ -1,0 +1,27 @@
+---
+- name: Detect if systemd-boot is installed
+  ansible.builtin.command: bootctl is-installed
+  register: systemd_boot_installed
+  changed_when: false
+  check_mode: false
+  failed_when: false
+- name: Normalize systemd_boot_installed facts
+  ansible.builtin.set_fact:
+    systemd_boot_installed: '{{ systemd_boot_installed.stdout == "yes" }}'
+- name: Detect if grub is configured
+  become: true
+  ansible.builtin.stat:
+    path: /boot/grub/grub.cfg
+  register: grub_configured
+  changed_when: false
+  check_mode: false
+- name: Normalize grub_configured fact
+  ansible.builtin.set_fact:
+    grub_configured: "{{ grub_configured.stat.exists }}"
+- name: Ensure exactly one bootloader is configured
+  ansible.builtin.assert:
+    that: systemd_boot_installed and not grub_configured or not systemd_boot_installed and grub_configured
+    fail_msg: "/boot/grub/grub.cfg found but systemd-boot is installed."
+- name: Set bootloader fact
+  ansible.builtin.set_fact:
+    bootloader: '{{ "systemd-boot" if systemd_boot_installed else "grub" }}'

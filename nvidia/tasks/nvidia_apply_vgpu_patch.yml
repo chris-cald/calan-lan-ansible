@@ -1,0 +1,11 @@
+---
+- name: Apply the vGPU patch if not all GPUs support vGPU
+  when: not vgpu_fully_supported
+  become: true
+  ansible.builtin.command:
+    cmd: /opt/nvidia_driver.run --apply-patch /tmp/vgpu-proxmox/{{ target_nvidia_driver_version }}.patch
+  register: nvidia_driver_patch
+  changed_when: nvidia_driver_patch.stdout | regex_search("Self-extractible archive .* successfully created\.")
+  notify: nvidia_driver_patched
+  tags:
+    - nvidia

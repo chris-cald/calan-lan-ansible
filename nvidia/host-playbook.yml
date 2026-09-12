@@ -1,0 +1,56 @@
+---
+- name: Configure host with NVIDIA driver
+  hosts: device_roles_vgpu
+  become: true
+  roles:
+    - role: robertdebock.cargo
+      tags:
+        - cargo
+        - host
+  vars_prompt:
+    - name: nvidia_driver_path
+      prompt: "Path to the NVIDIA driver file (e.g., /path/to/NVIDIA-Linux-x86_64-570.148.06-vgpu-kvm.run)"
+      private: false
+      default: "~/Downloads/NVIDIA-GRID-Linux-KVM-570.148.06-570.148.08-573.07/Host_Drivers/NVIDIA-Linux-x86_64-570.148.06-vgpu-kvm.run"
+  vars:
+    nvidia_preinstall_tasks_path: "tasks/nvidia_apply_vgpu_patch.yml"
+  tasks:
+    - name: Baseline the system for PVE-specific tasks
+      ansible.builtin.include_tasks:
+        file: tasks/ensure_build_prereqs.yml
+        apply:
+          tags: host
+
+    - name: Gather NVIDIA GPU facts
+      ansible.builtin.include_tasks:
+        file: tasks/gather_nvidia_facts.yml
+        apply:
+          tags: host
+
+    - name: Gather bootloader facts
+      ansible.builtin.include_tasks:
+        file: tasks/gather_bootloader_facts.yml
+        apply:
+          tags: host
+    - name: Enable IOMMU
+      ansible.builtin.include_tasks:
+        file: tasks/iommu.yml
+        apply:
+          tags: host
+    # Loading required kernel modules, blacklist the open source driver, and install the vGPU driver
+    - name: Load required kernel modules, blacklist the open source driver, and install the vGPU driver
+      ansible.builtin.include_tasks:
+        file: tasks/nvidia_enable_vgpu.yml
+        apply:
+          tags: host
+
+  handlers:
+    - name: Reload Boot Settings
+      listen: reload-boot-settings
+      become: true
+      ansible.builtin.command:
+        cmd: '{{ "proxmox-boot-tool refresh" if bootloader == "systemd-boot" else "update-grub" }}'
+      tags:
+        - skip_ansible_lint
+    - ansible.builtin.import_tasks: handlers/nvidia_driver_handlers.yml
+    - ansible.builtin.import_tasks: handlers/nvidia_vgpu_patch_handlers.yml

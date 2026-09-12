@@ -1,0 +1,11 @@
+---
+- name: Ensure build packages are installed
+  ansible.builtin.apt:
+    autoremove: true
+    autoclean: true
+    name:
+      - git
+      - build-essential
+      - pve-headers
+      - dkms
+      - mdevctl

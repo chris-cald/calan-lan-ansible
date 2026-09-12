@@ -1,0 +1,7 @@
+---
+- name: Prepare system for NVIDIA driver
+  hosts: all
+  tasks:
+    - name: Display all host variables
+      ansible.builtin.debug:
+        var: hostvars[inventory_hostname]

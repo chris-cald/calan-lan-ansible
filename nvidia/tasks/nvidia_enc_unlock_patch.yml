@@ -1,0 +1,25 @@
+---
+- name: Patch concurrent decode limits
+  block:
+    - name: Clone the nvidia-patch repo
+      ansible.builtin.git:
+        repo: https://github.com/keylase/nvidia-patch.git
+        dest: /tmp/nvidia-patch
+        version: maste
+      tags:
+        - nvidiar
+    - name: Apply the NVENC patch
+      become: true
+      ansible.builtin.command:
+        cmd: "/tmp/nvidia-patch/patch.sh -s"
+      register: nvidia_patch
+      changed_when: nvidia_patch.stdout=="Patched!"
+      tags:
+        - nvidia
+  always:
+    - name: Remove the nvidia-patch repo
+      become: true
+      ansible.builtin.file:
+        path: /tmp/nvidia-patch
+        state: absent
+        force: true

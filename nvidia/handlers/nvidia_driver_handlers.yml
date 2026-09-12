@@ -1,0 +1,16 @@
+---
+- name: Update initramfs
+  listen: update-initramfs
+  become: true
+  ansible.builtin.command:
+    cmd: update-initramfs -u -k all
+  tags:
+    - skip_ansible_lint
+- name: Reboot
+  listen: reboot
+  become: true
+  ansible.builtin.reboot:
+    msg: "Rebooting to apply ansible changes"
+    connect_timeout: 5
+    pre_reboot_delay: 0
+    post_reboot_delay: 10

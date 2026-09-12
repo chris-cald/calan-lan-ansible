@@ -1,0 +1,88 @@
+---
+- name: Ensure the vGPU NVIDIA driver is installed
+  block:
+    - name: Clone patch repo
+      ansible.builtin.git:
+        repo: https://gitlab.com/polloloco/vgpu-proxmox.git
+        dest: /tmp/vgpu-proxmox
+        version: master
+    - name: Clone vgpu_unlock-rs repo
+      become: true
+      ansible.builtin.git:
+        repo: https://github.com/mbilker/vgpu_unlock-rs.git
+        dest: /opt/vgpu_unlock-rs
+        version: master
+    - name: Build vgpu_unlock-rs
+      become: true
+      ansible.builtin.shell: . $HOME/.cargo/env && cd /opt/vgpu_unlock-rs/ && cargo build --release
+      register: cargo_build
+      changed_when: false
+    # Create files for vGPU unlock
+    - name: Ensure vGPU unlock directories exist
+      become: true
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /etc/vgpu_unlock
+        - /etc/systemd/system/nvidia-vgpud.service.d
+        - /etc/systemd/system/nvidia-vgpu-mgr.service.d
+    - name: Ensure profile_override.toml exists
+      become: true
+      ansible.builtin.file:
+        path: /etc/vgpu_unlock/profile_override.toml
+        state: touch
+        mode: "0644"
+    - name: Ensure unlock is in place for vgpu daemon
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/nvidia-vgpud.service.d/vgpu_unlock.conf
+        mode: "0644"
+        content: |
+          [Service]
+          Environment=LD_PRELOAD=/opt/vgpu_unlock-rs/target/release/libvgpu_unlock_rs.so
+    - name: Ensure unlock is in place for vgpu mgr
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/nvidia-vgpu-mgr.service.d/vgpu_unlock.conf
+        mode: "0644"
+        content: |
+          [Service]
+          Environment=LD_PRELOAD=/opt/vgpu_unlock-rs/target/release/libvgpu_unlock_rs.so
+    # Have a vgpu supported card? Run this
+    - name: Disable unlock if vgpu already supported
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/vgpu_unlock/config.toml
+        content: unlock = false
+        mode: "0644"
+      when: vgpu_fully_supported
+    # TODO: If legacy and 17.0+ driver...
+    - name: Ensure vfio modules set up
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: "{{ item }}"
+      loop:
+        - vfio
+        - vfio_iommu_type1
+        - vfio_pci
+        - vfio_virqfd
+      notify:
+        - update-initramfs
+        - reboot
+      tags:
+        - nvidia
+    - name: Import NVIDIA driver tasks
+      ansible.builtin.import_tasks: tasks/nvidia_driver.yml
+    - name: Ensure vgpu unlock is working
+      ansible.builtin.command:
+        cmd: mdevctl types
+      register: mdevctl_types
+      changed_when: false
+      check_mode: false
+    - name: Assert that vgpu unlock is working
+      ansible.builtin.assert:
+        that: mdevctl_types.stdout != ''
+        fail_msg: "vGPU unlock not properly applied."
