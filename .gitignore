@@ -122,3 +122,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Caller-owned private artifacts must remain outside this reusable checkout.
+private/
