@@ -14,10 +14,14 @@ do
     echo "tracked private artifact: $path" >&2
     exit 1
   fi
-  if ! git check-ignore -q "$path"; then
-    echo "private artifact is not ignored: $path" >&2
-    exit 1
-  fi
+  match=$(git check-ignore -v --no-index "$path")
+  case "$match" in
+    .gitignore:*) ;;
+    *)
+      echo "private artifact is not ignored by repository .gitignore: $path" >&2
+      exit 1
+      ;;
+  esac
 done
 
 if git grep -nE '\b(10\.[0-9]{1,3}\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)' -- ':!tests/public_exposure_scrub.sh' >/dev/null; then

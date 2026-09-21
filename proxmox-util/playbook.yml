@@ -1,0 +1,22 @@
+---
+- name: Run Proxmox utility tasks
+  hosts: all
+  gather_facts: false
+
+  pre_tasks:
+    - name: Require one caller-owned protected inventory
+      ansible.builtin.assert:
+        that:
+          - proxmox_util_inventory is defined
+          - proxmox_util_inventory | length > 0
+          - proxmox_util_inventory is match('^/')
+          - ansible_inventory_sources | length == 1
+          - ansible_inventory_sources | first == proxmox_util_inventory
+          - proxmox_util_inventory is not match('^' ~ playbook_dir ~ '/')
+        fail_msg: >-
+          Pass one absolute inventory outside this checkout with -i and
+          -e proxmox_util_inventory=/absolute/path/to/protected-hosts.ini.
+
+  tasks:
+    - name: Import Proxmox utility tasks
+      ansible.builtin.import_tasks: main.yaml
