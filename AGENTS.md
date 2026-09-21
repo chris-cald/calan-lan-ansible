@@ -38,6 +38,9 @@
   artifacts.
 - Update the nearest role documentation and the relevant `docs/` contract when
   changing inputs, mutations, checkpoints, rollback behavior, or validation.
+- Follow the canonical [Ansible engineering standards](docs/ansible-engineering-standards.md).
+  The [modernization risk report](docs/ansible-modernization-risk-report.md)
+  records the current tier and approval requirements for each first-party unit.
 
 ## Validation
 
