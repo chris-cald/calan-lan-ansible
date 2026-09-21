@@ -125,3 +125,7 @@ $RECYCLE.BIN/
 
 # Caller-owned private artifacts must remain outside this reusable checkout.
 private/
+/proxmox-util/hosts.ini
+/playbooks/podman/inventory
+/playbooks/podman-semaphore/inventory
+/playbooks/awx/awx-github.pub
