@@ -13,5 +13,7 @@ Repository-owned operational and engineering contracts:
   virtualization, and NVIDIA automation.
 - [Platform automation ownership](platform-automation-ownership.md) —
   the approved tool boundary, bootstrap order, and platform constraints.
+- [Talos vGPU compatibility spike](talos-vgpu-compatibility.md) — protected
+  input contract and offline gate for the required host/guest driver proof.
 
 Upstream submodules retain their own documentation and release processes.
