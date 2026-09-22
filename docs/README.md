@@ -8,5 +8,8 @@ Repository-owned operational and engineering contracts:
 - [Ansible modernization risk report](ansible-modernization-risk-report.md) —
   first-party inventory, safety classification, evidence matrix, and approval
   requirements.
+- [Ansible modernization boundaries](ansible-modernization-boundaries.md) —
+  approval-gated modernization slices for root/privilege, services,
+  virtualization, and NVIDIA automation.
 
 Upstream submodules retain their own documentation and release processes.
