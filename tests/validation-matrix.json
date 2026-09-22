@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "pattern": "playbook.yml",
+      "tier": "routine-idempotent",
+      "evidence": "blocked",
+      "reason": "The local microk8s role is absent after repository reconciliation; restore or replace it before syntax validation."
+    },
+    {
+      "pattern": "roles/sudo/**/*.yml",
+      "tier": "routine-idempotent",
+      "evidence": "offline",
+      "command": "ANSIBLE_ROLES_PATH=$PWD/roles ansible-playbook -i 'localhost,' --syntax-check roles/sudo/tests/test.yml"
+    },
+    {
+      "pattern": "playbooks/awx/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/podman/main.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/podman-semaphore/main.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-cloudinit/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-maint/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-maint/requirements.yaml",
+      "tier": "metadata",
+      "evidence": "dependency-review"
+    },
+    {
+      "pattern": "nvidia/tasks/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "nvidia/handlers/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "nvidia/guest-playbook.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "nvidia/host-playbook.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "nvidia/hosts-test.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "nvidia/playbook.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "nvidia/test-playbook.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "nvidia/requirements.yml",
+      "tier": "metadata",
+      "evidence": "dependency-review"
+    },
+    {
+      "pattern": "proxmox-util/*.yaml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "proxmox-util/playbook.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    }
+  ]
+}
