@@ -11,5 +11,7 @@ Repository-owned operational and engineering contracts:
 - [Ansible modernization boundaries](ansible-modernization-boundaries.md) —
   approval-gated modernization slices for root/privilege, services,
   virtualization, and NVIDIA automation.
+- [Talos vGPU compatibility spike](talos-vgpu-compatibility.md) — protected
+  input contract and offline gate for the required host/guest driver proof.
 
 Upstream submodules retain their own documentation and release processes.
