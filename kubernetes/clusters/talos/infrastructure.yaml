@@ -1,0 +1,32 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: metallb-release
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/clusters/talos/infrastructure/metallb/release
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: metallb-config
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: metallb-release
+  interval: 10m
+  path: ./kubernetes/clusters/talos/infrastructure/metallb/config
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: metallb-address-pool
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
