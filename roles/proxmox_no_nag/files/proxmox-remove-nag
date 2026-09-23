@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+web_js=/usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+if [ -s "$web_js" ] && ! grep -q NoMoreNagging "$web_js"; then
+  sed -i -e '/data\.status/ s/!//' -e '/data\.status/ s/active/NoMoreNagging/' "$web_js"
+fi

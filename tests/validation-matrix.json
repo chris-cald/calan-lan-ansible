@@ -29,6 +29,16 @@
       "evidence": "discovery"
     },
     {
+      "pattern": "roles/proxmox_no_nag/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-no-nag.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
       "pattern": "playbooks/awx/*.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
