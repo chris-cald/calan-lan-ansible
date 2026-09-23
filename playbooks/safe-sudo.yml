@@ -1,0 +1,21 @@
+---
+- name: Install the guarded safe-sudo dispatcher
+  hosts: "{{ safe_sudo_targets | default('safe_sudo') }}"
+  gather_facts: false
+  become: true
+  vars:
+    safe_sudo_apply: false
+    safe_sudo_confirmation: ''
+    safe_sudo_enabled: "{{ safe_sudo_apply | bool }}"
+  pre_tasks:
+    - name: Require explicit safe-sudo approval
+      ansible.builtin.assert:
+        that:
+          - safe_sudo_apply | bool
+          - safe_sudo_confirmation == 'apply-safe-sudo'
+          - safe_sudo_users | default([]) | length > 0
+        fail_msg: >-
+          Set safe_sudo_apply=true, safe_sudo_confirmation=apply-safe-sudo,
+          and safe_sudo_users to install safe-sudo.
+  roles:
+    - role: safe_sudo
