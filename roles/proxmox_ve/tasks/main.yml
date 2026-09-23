@@ -1,0 +1,155 @@
+---
+- name: Apply the guarded Proxmox VE workflow
+  when: proxmox_ve_apply | bool
+  block:
+    - name: Validate the requested Proxmox VE workflow
+      ansible.builtin.assert:
+        that:
+          - proxmox_ve_confirm == proxmox_ve_confirmation
+          - proxmox_ve_supported_architectures | length > 0
+          - ansible_architecture in proxmox_ve_supported_architectures
+          - ansible_distribution_release == 'trixie'
+          - proxmox_ve_cluster_mode in ['single', 'create', 'join']
+          - proxmox_ve_node_hostname is match('^[a-z][a-z0-9-]{0,62}$')
+          - proxmox_ve_node_address | length > 0
+          - not proxmox_ve_manage_network | bool or proxmox_ve_gateway | length > 0
+          - proxmox_ve_cluster_mode != 'create' or proxmox_ve_cluster_name is match('^[a-zA-Z][a-zA-Z0-9-]{0,62}$')
+          - proxmox_ve_cluster_mode != 'join' or proxmox_ve_cluster_join_address | length > 0
+          - proxmox_ve_cluster_mode != 'join' or proxmox_ve_cluster_join_fingerprint is match('^([A-Fa-f0-9]{2}:){31}[A-Fa-f0-9]{2}$')
+          - proxmox_ve_cluster_mode != 'join' or proxmox_ve_cluster_join_password | length > 0
+          - proxmox_ve_cluster_mode != 'join' or proxmox_ve_cluster_join_data_loss_acknowledgement == proxmox_ve_cluster_join_data_loss_confirmation
+        fail_msg: >-
+          Refusing to mutate this host: provide all caller-owned topology, typed
+          confirmations, and join credentials through protected variables.
+
+    - name: Validate caller-supplied IP addresses
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - import ipaddress, sys; [ipaddress.ip_address(value) for value in sys.argv[1:]]
+          - '{{ item }}'
+      loop: >-
+        {{ [proxmox_ve_node_address]
+           + ([proxmox_ve_gateway] if proxmox_ve_manage_network | bool else [])
+           + ([proxmox_ve_cluster_link0_address] if proxmox_ve_cluster_link0_address | length > 0 else [])
+           + ([proxmox_ve_cluster_join_address] if proxmox_ve_cluster_mode == 'join' else []) }}
+      changed_when: false
+
+    - name: Map the final node hostname to its reachable address
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '^[^#].*\s{{ proxmox_ve_node_hostname }}(?:\s|$)'
+        line: '{{ proxmox_ve_node_address }} {{ proxmox_ve_node_hostname }}'
+        create: false
+
+    - name: Configure the Proxmox bridge for the next deliberate network activation
+      when: proxmox_ve_manage_network | bool
+      block:
+        - name: Install ifupdown2
+          ansible.builtin.apt:
+            name: ifupdown2
+            state: present
+            update_cache: true
+
+        - name: Remove conflicting network and first-boot managers
+          ansible.builtin.apt:
+            name:
+              - network-manager
+              - cloud-init
+            state: absent
+            purge: true
+
+        - name: Render the bridge configuration without reloading the active network
+          ansible.builtin.template:
+            src: interfaces.j2
+            dest: /etc/network/interfaces
+            owner: root
+            group: root
+            mode: '0644'
+
+    - name: Disable systemd's competing watchdog
+      ansible.builtin.copy:
+        dest: /etc/systemd/system.conf.d/99-proxmox-no-watchdog.conf
+        content: |
+          [Manager]
+          RuntimeWatchdogSec=0
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Install the Proxmox repository signing key
+      ansible.builtin.get_url:
+        url: https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg
+        dest: /usr/share/keyrings/proxmox-archive-keyring.gpg
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Configure the signed no-subscription Proxmox repository
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/pve-install-repo.sources
+        content: |
+          Types: deb
+          URIs: https://download.proxmox.com/debian/pve
+          Suites: trixie
+          Components: pve-no-subscription
+          Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Upgrade the base system before installing Proxmox
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: full
+
+    - name: Install Proxmox and cluster prerequisites
+      ansible.builtin.apt:
+        name:
+          - proxmox-ve
+          - postfix
+          - open-iscsi
+          - chrony
+          - python3-pexpect
+        state: present
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Remove the unneeded boot partition scanner
+      ansible.builtin.apt:
+        name: os-prober
+        state: absent
+        purge: true
+        autoremove: true
+
+    - name: Check whether this node already has cluster configuration
+      ansible.builtin.stat:
+        path: /etc/pve/corosync.conf
+      register: proxmox_ve_corosync_conf
+
+    - name: Create the shared Proxmox control plane
+      ansible.builtin.command:
+        argv: >-
+          {{ ['pvecm', 'create', proxmox_ve_cluster_name]
+             + (['--link0', proxmox_ve_cluster_link0_address] if proxmox_ve_cluster_link0_address | length > 0 else []) }}
+      when:
+        - proxmox_ve_cluster_mode == 'create'
+        - not proxmox_ve_corosync_conf.stat.exists
+
+    - name: Join the existing shared Proxmox control plane
+      ansible.builtin.expect:
+        command: >-
+          pvecm add {{ proxmox_ve_cluster_join_address }}
+          --fingerprint {{ proxmox_ve_cluster_join_fingerprint }}
+        responses:
+          '(?i)password:': '{{ proxmox_ve_cluster_join_password }}'
+      when:
+        - proxmox_ve_cluster_mode == 'join'
+        - not proxmox_ve_corosync_conf.stat.exists
+      no_log: true
+
+    - name: Report local Proxmox control-plane status
+      ansible.builtin.command:
+        argv: [pvecm, status]
+      changed_when: false

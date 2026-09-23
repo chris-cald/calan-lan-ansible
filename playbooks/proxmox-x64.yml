@@ -1,0 +1,7 @@
+---
+- name: Provision a guarded x64 Proxmox node
+  hosts: proxmox_x64
+  become: true
+  gather_facts: true
+  roles:
+    - role: proxmox_x64

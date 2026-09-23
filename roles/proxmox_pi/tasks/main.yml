@@ -1,0 +1,32 @@
+---
+- name: Validate the unsupported Raspberry Pi platform choice
+  when: proxmox_pi_apply | bool
+  ansible.builtin.assert:
+    that:
+      - proxmox_pi_unsupported_hardware_acknowledgement == proxmox_pi_unsupported_hardware_confirmation
+    fail_msg: >-
+      Raspberry Pi is device-tree-only and unsupported by Proxmox VE. Set the
+      explicit acknowledgement only for an experimental deployment.
+
+- name: Compose the common Proxmox VE workflow for Raspberry Pi
+  ansible.builtin.include_role:
+    name: proxmox_ve
+  vars:
+    proxmox_ve_apply: '{{ proxmox_pi_apply }}'
+    proxmox_ve_confirm: '{{ proxmox_pi_confirm }}'
+    proxmox_ve_confirmation: '{{ proxmox_pi_confirmation }}'
+    proxmox_ve_supported_architectures: [aarch64, arm64]
+    proxmox_ve_manage_network: '{{ proxmox_pi_manage_network }}'
+    proxmox_ve_interface: '{{ proxmox_pi_interface }}'
+    proxmox_ve_node_address: '{{ proxmox_pi_node_address }}'
+    proxmox_ve_node_prefix: '{{ proxmox_pi_node_prefix }}'
+    proxmox_ve_gateway: '{{ proxmox_pi_gateway }}'
+    proxmox_ve_node_hostname: '{{ proxmox_pi_node_hostname }}'
+    proxmox_ve_cluster_mode: '{{ proxmox_pi_cluster_mode }}'
+    proxmox_ve_cluster_name: '{{ proxmox_pi_cluster_name }}'
+    proxmox_ve_cluster_link0_address: '{{ proxmox_pi_cluster_link0_address }}'
+    proxmox_ve_cluster_join_address: '{{ proxmox_pi_cluster_join_address }}'
+    proxmox_ve_cluster_join_fingerprint: '{{ proxmox_pi_cluster_join_fingerprint }}'
+    proxmox_ve_cluster_join_password: '{{ proxmox_pi_cluster_join_password }}'
+    proxmox_ve_cluster_join_data_loss_acknowledgement: '{{ proxmox_pi_cluster_join_data_loss_acknowledgement }}'
+    proxmox_ve_cluster_join_data_loss_confirmation: '{{ proxmox_pi_cluster_join_data_loss_confirmation }}'

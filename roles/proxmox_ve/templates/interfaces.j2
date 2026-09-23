@@ -1,0 +1,15 @@
+# Managed by Ansible. Activation requires a deliberate reboot or ifreload.
+source /etc/network/interfaces.d/*
+
+auto lo
+iface lo inet loopback
+
+iface {{ proxmox_ve_interface }} inet manual
+
+auto vmbr0
+iface vmbr0 inet static
+    address {{ proxmox_ve_node_address }}/{{ proxmox_ve_node_prefix }}
+    gateway {{ proxmox_ve_gateway }}
+    bridge-ports {{ proxmox_ve_interface }}
+    bridge-stp off
+    bridge-fd 0
