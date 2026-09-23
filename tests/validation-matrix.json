@@ -59,6 +59,16 @@
       "evidence": "discovery"
     },
     {
+      "pattern": "roles/platform_discovery/**/*.yml",
+      "tier": "read-only",
+      "evidence": "offline"
+    },
+    {
+      "pattern": "roles/platform_handoff/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
       "pattern": "roles/proxmox_existing/**/*.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
