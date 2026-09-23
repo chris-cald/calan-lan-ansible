@@ -26,24 +26,34 @@ and credentials stay in protected operator inputs.
    without running a container. The host never clones third-party sources.
 3. After the host role reboots and `mdevctl types` exposes the intended profile,
    run the mdev role, then let OpenTofu attach that UUID to the disposable VM.
-   profile to a disposable VM. Record the VM and snapshot outside Git.
-4. Build a Talos extension from the manifest's pinned guest-driver artifact.
-   If `nvenc_patch_enabled` is true, apply the reviewed patch during the build,
-   verify the output hash, and record its source/revision/hash in the protected
-   manifest. Do not patch a running Talos node.
-5. Boot the disposable Talos VM and use Flux to reconcile only the NVIDIA
-   device plugin and a constrained test workload.
+   Record the VM and snapshot outside Git.
+4. Build a custom Talos kernel, signed GRID/vGPU extension, and installer from
+   pinned protected Talos/extensions forks with
+   `talos/vgpu-extension/build.py`. Record the immutable installer and
+   extension digests outside Git. If `nvenc_patch_enabled` is true, the
+   protected fork must verify and apply the reviewed patch during its build.
+   Do not patch a running Talos node.
+5. Boot the disposable Talos VM and create the suspended `vgpu-test` Flux
+   Kustomization only after the prior checkpoints. Resume and reconcile it to
+   apply the NVIDIA device plugin and constrained smoke workload:
+
+   ```sh
+   kubectl apply -f kubernetes/clusters/talos/tests/vgpu-flux.yaml
+   flux resume kustomization vgpu-test
+   flux reconcile kustomization vgpu-test --with-source
+   ```
 
 ## Test-only stack artifacts
 
 - `tofu/vgpu-test` creates one cloned VM with an externally created mdev. It is
   disabled until protected variables and `apply-disposable-vgpu-test` are
   supplied.
-- `talos/vgpu-extension` defines the protected-builder contract for the
-  immutable guest-driver and optional NVENC patch.
+- `talos/vgpu-extension/build.py` executes the protected-fork custom-kernel
+  builder and records immutable image references after validation.
 - `kubernetes/clusters/talos/tests/vgpu` contains a node-label-scoped device
-  plugin and GPU smoke Job. It is deliberately absent from the default Flux
-  infrastructure entrypoint; reconcile it only after the prior checkpoints.
+  plugin and GPU smoke Job. `kubernetes/clusters/talos/tests/vgpu-flux.yaml`
+  declares a separate, suspended Flux Kustomization; it is deliberately absent
+  from the default infrastructure entrypoint.
 
 ## Bespoke Linux VM option
 
