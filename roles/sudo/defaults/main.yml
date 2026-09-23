@@ -2,6 +2,8 @@
 ---
 # defaults file for sudo
 password_required: true
+# Empty preserves the legacy NOPASSWD:ALL behavior when password_required is false.
+passwordless_commands: []
 
 # Compatibility aliases: when set, sudo_* values override legacy inputs.
 # sudo_privileged_user
