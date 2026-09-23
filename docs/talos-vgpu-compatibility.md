@@ -38,5 +38,5 @@ python3 tests/validate_vgpu_compatibility_manifest.py \
 A passing manifest is an input gate, not a deployment. It still requires a
 reproducible Talos extension build, a disposable mediated-device VM proof, and
 Flux device-plugin/workload validation. See
-[Talos vGPU architecture](talos-vgpu-architecture.md) for the ownership and
+[self-supported vGPU architecture](self-supported-vgpu-architecture.md) for the ownership and
 instrumentation model.
