@@ -1,0 +1,4 @@
+---
+proxmox_bmc_pixie_apply: false
+proxmox_bmc_pixie_provisioner: disabled
+proxmox_bmc_pixie_request_path: ""

@@ -1,0 +1,103 @@
+---
+- name: Validate platform orchestration inputs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: platform_orchestration
+
+- name: Bootstrap SSH-ready Raspberry Pi Proxmox nodes
+  hosts: proxmox_pi
+  become: true
+  gather_facts: true
+  serial: 1
+  roles:
+    - role: platform_orchestration
+    - role: proxmox_pi
+      proxmox_pi_apply: >-
+        {{ platform_orchestration_mode == 'apply' and
+           (platform_orchestration_pi_apply_requested | bool) }}
+
+- name: Bootstrap SSH-ready x64 Proxmox nodes
+  hosts: proxmox_x64
+  become: true
+  gather_facts: true
+  serial: 1
+  roles:
+    - role: platform_orchestration
+    - role: proxmox_x64
+      proxmox_x64_apply: >-
+        {{ platform_orchestration_mode == 'apply' and
+           (platform_orchestration_x64_apply_requested | bool) }}
+
+- name: Bootstrap SSH-ready supported ARM Proxmox nodes
+  hosts: proxmox_arm64
+  become: true
+  gather_facts: true
+  serial: 1
+  roles:
+    - role: platform_orchestration
+    - role: proxmox_arm64
+      proxmox_arm64_apply: >-
+        {{ platform_orchestration_mode == 'apply' and
+           (platform_orchestration_arm64_apply_requested | bool) }}
+
+- name: Validate or configure existing Proxmox nodes
+  hosts: proxmox_existing
+  become: true
+  gather_facts: true
+  serial: 1
+  roles:
+    - role: platform_orchestration
+    - role: proxmox_existing
+      proxmox_existing_apply: >-
+        {{ platform_orchestration_mode == 'apply' and
+           (platform_orchestration_existing_apply_requested | bool) }}
+
+- name: Declare future BMC or Pixie provisioning handoff
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: platform_orchestration
+    - role: proxmox_bmc_pixie
+
+- name: Configure optional NVIDIA vGPU hosts
+  hosts: proxmox_vgpu
+  become: true
+  gather_facts: true
+  serial: 1
+  roles:
+    - role: platform_orchestration
+    - role: proxmox_vgpu_host
+      proxmox_vgpu_host_apply: >-
+        {{ platform_orchestration_mode == 'apply' and
+           (platform_orchestration_vgpu_host_apply_requested | bool) }}
+    - role: proxmox_vgpu_unlock
+      proxmox_vgpu_unlock_apply: >-
+        {{ platform_orchestration_mode == 'apply' and
+           (platform_orchestration_vgpu_host_apply_requested | bool) }}
+
+- name: Configure optional mediated devices after reboot
+  hosts: proxmox_vgpu
+  become: true
+  gather_facts: true
+  serial: 1
+  roles:
+    - role: platform_orchestration
+    - role: proxmox_vgpu_mdev
+      proxmox_vgpu_mdev_apply: >-
+        {{ platform_orchestration_mode == 'apply' and
+           (platform_orchestration_vgpu_mdev_apply_requested | bool) }}
+
+- name: Record the handoff to OpenTofu Talos provisioning
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: platform_orchestration
+    - role: talos_handoff
+      talos_handoff_apply: >-
+        {{ platform_orchestration_mode == 'apply' and
+           (platform_orchestration_talos_handoff_requested | bool) }}
+      talos_handoff_path: "{{ platform_orchestration_talos_handoff_path }}"

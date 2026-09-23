@@ -4,9 +4,14 @@
   ansible.builtin.assert:
     that:
       - proxmox_pi_unsupported_hardware_acknowledgement == proxmox_pi_unsupported_hardware_confirmation
+      - >-
+        proxmox_pi_cluster_mode not in ['create', 'join'] or
+        proxmox_pi_mixed_architecture_cluster_acknowledgement ==
+        proxmox_pi_mixed_architecture_cluster_confirmation
     fail_msg: >-
       Raspberry Pi is device-tree-only and unsupported by Proxmox VE. Set the
-      explicit acknowledgement only for an experimental deployment.
+      explicit hardware acknowledgement and the separate mixed-architecture
+      cluster acknowledgement only for an experimental deployment.
 
 - name: Compose the common Proxmox VE workflow for Raspberry Pi
   ansible.builtin.include_role:

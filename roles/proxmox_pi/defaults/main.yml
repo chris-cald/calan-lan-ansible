@@ -5,6 +5,8 @@ proxmox_pi_confirm: ""
 proxmox_pi_confirmation: provision-proxmox-pi
 proxmox_pi_unsupported_hardware_acknowledgement: ""
 proxmox_pi_unsupported_hardware_confirmation: accept-unsupported-raspberry-pi-pve
+proxmox_pi_mixed_architecture_cluster_acknowledgement: ""
+proxmox_pi_mixed_architecture_cluster_confirmation: accept-mixed-architecture-proxmox-cluster
 
 proxmox_pi_manage_network: false
 proxmox_pi_interface: eth0

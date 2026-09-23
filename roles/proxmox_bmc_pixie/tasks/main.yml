@@ -1,0 +1,10 @@
+---
+- name: Validate future BMC or Pixie provisioning handoff
+  ansible.builtin.assert:
+    that:
+      - proxmox_bmc_pixie_provisioner in ['disabled', 'bmc', 'pixie']
+      - not proxmox_bmc_pixie_apply | bool
+      - proxmox_bmc_pixie_provisioner == 'disabled' or proxmox_bmc_pixie_request_path is match('^/')
+    fail_msg: >-
+      BMC and Pixie provisioning are declared interfaces only. Keep mutation
+      disabled and pass a caller-owned absolute request path for future work.

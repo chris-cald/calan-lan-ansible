@@ -1,0 +1,83 @@
+---
+- name: Read installed Proxmox version
+  ansible.builtin.command:
+    argv: [pveversion]
+  register: proxmox_existing_version
+  changed_when: false
+
+- name: Require an installed Proxmox node
+  ansible.builtin.assert:
+    that: proxmox_existing_version.rc == 0
+    fail_msg: This entrypoint configures existing Proxmox only; use an SSH bootstrap role for a base host.
+
+- name: Read existing Proxmox cluster state
+  ansible.builtin.stat:
+    path: /etc/pve/corosync.conf
+  register: proxmox_existing_corosync
+
+- name: Configure existing Proxmox cluster membership
+  when: proxmox_existing_apply | bool
+  block:
+    - name: Validate existing Proxmox cluster request
+      ansible.builtin.assert:
+        that:
+          - proxmox_existing_confirmation == proxmox_existing_confirmation_value
+          - proxmox_existing_cluster_mode in ['validate', 'create', 'join']
+          - proxmox_existing_cluster_architecture in ['same', 'mixed']
+          - >-
+            proxmox_existing_cluster_architecture != 'mixed' or
+            proxmox_existing_mixed_architecture_acknowledgement ==
+            proxmox_existing_mixed_architecture_confirmation
+          - proxmox_existing_cluster_mode != 'create' or proxmox_existing_cluster_name is match('^[a-zA-Z][a-zA-Z0-9-]{0,62}$')
+          - proxmox_existing_cluster_mode != 'join' or proxmox_existing_cluster_join_address | length > 0
+          - proxmox_existing_cluster_mode != 'join' or proxmox_existing_cluster_join_fingerprint is match('^([A-Fa-f0-9]{2}:){31}[A-Fa-f0-9]{2}$')
+          - proxmox_existing_cluster_mode != 'join' or proxmox_existing_cluster_join_password | length > 0
+          - >-
+            proxmox_existing_cluster_mode != 'join' or
+            proxmox_existing_cluster_join_data_loss_acknowledgement ==
+            proxmox_existing_cluster_join_data_loss_confirmation
+        fail_msg: >-
+          Existing Proxmox membership changes require typed confirmation,
+          protected topology inputs, and an extra acknowledgement for mixed
+          architecture clusters.
+
+    - name: Validate caller-supplied cluster addresses
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - import ipaddress, sys; [ipaddress.ip_address(value) for value in sys.argv[1:]]
+          - "{{ item }}"
+      loop: >-
+        {{ ([proxmox_existing_cluster_link0_address] if proxmox_existing_cluster_link0_address | length > 0 else [])
+           + ([proxmox_existing_cluster_join_address] if proxmox_existing_cluster_mode == 'join' else []) }}
+      changed_when: false
+
+    - name: Create the existing Proxmox cluster
+      ansible.builtin.command:
+        argv: >-
+          {{ ['pvecm', 'create', proxmox_existing_cluster_name]
+             + (['--link0', proxmox_existing_cluster_link0_address] if proxmox_existing_cluster_link0_address | length > 0 else []) }}
+      when:
+        - proxmox_existing_cluster_mode == 'create'
+        - not proxmox_existing_corosync.stat.exists
+      changed_when: true
+
+    - name: Join the existing Proxmox cluster
+      ansible.builtin.expect:
+        command: >-
+          pvecm add {{ proxmox_existing_cluster_join_address }}
+          --fingerprint {{ proxmox_existing_cluster_join_fingerprint }}
+        responses:
+          '(?i)password:': "{{ proxmox_existing_cluster_join_password }}"
+      when:
+        - proxmox_existing_cluster_mode == 'join'
+        - not proxmox_existing_corosync.stat.exists
+      no_log: true
+      changed_when: true
+
+- name: Report existing Proxmox cluster state
+  ansible.builtin.command:
+    argv: [pvecm, status]
+  changed_when: false
+  failed_when: false

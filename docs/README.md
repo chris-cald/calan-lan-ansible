@@ -15,5 +15,7 @@ Repository-owned operational and engineering contracts:
   input contract and offline gate for the required host/guest driver proof.
 - [Self-supported vGPU architecture](self-supported-vgpu-architecture.md) — Ansible,
   OpenTofu, Talos, and Flux boundaries plus operational checkpoints.
+- [Platform orchestration](platform-orchestration.md) — staged SSH bootstrap,
+  existing-node validation, optional vGPU, and OpenTofu Talos handoff.
 
 Upstream submodules retain their own documentation and release processes.
