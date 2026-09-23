@@ -1,11 +1,12 @@
+---
 - name: Make sure QEMU Guest Agent is installed
   become: true
-  package:
+  ansible.builtin.package:
     name:
       - qemu-guest-agent
     state: latest
-  # when: is a proxmox vm
+# when: is a proxmox vm
 - name: Make sure QEMU Guest Agent is running
-  systemd_service:
+  ansible.builtin.systemd_service:
     state: started
     name: qemu-guest-agent

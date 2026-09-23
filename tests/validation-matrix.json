@@ -2,12 +2,6 @@
   "version": 1,
   "entries": [
     {
-      "pattern": "playbook.yml",
-      "tier": "routine-idempotent",
-      "evidence": "blocked",
-      "reason": "The local microk8s role is absent after repository reconciliation; restore or replace it before syntax validation."
-    },
-    {
       "pattern": "roles/sudo/**/*.yml",
       "tier": "routine-idempotent",
       "evidence": "offline",
@@ -45,26 +39,6 @@
     },
     {
       "pattern": "playbooks/proxmox-arm64.yml",
-      "tier": "guarded-mutation",
-      "evidence": "discovery"
-    },
-    {
-      "pattern": "playbooks/awx/*.yml",
-      "tier": "guarded-mutation",
-      "evidence": "discovery"
-    },
-    {
-      "pattern": "playbooks/podman/main.yml",
-      "tier": "guarded-mutation",
-      "evidence": "discovery"
-    },
-    {
-      "pattern": "playbooks/podman-semaphore/main.yml",
-      "tier": "guarded-mutation",
-      "evidence": "discovery"
-    },
-    {
-      "pattern": "playbooks/proxmox-cloudinit/*.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
     },

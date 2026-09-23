@@ -5,14 +5,17 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
 
 python3 tests/test_validation_matrix.py
+python3 tests/test_platform_transition.py
 sh tests/public_exposure_scrub.sh
 sh tests/proxmox_util_inventory_gate.sh
 ANSIBLE_ROLES_PATH="$PWD/roles" ansible-playbook -i 'localhost,' --syntax-check roles/sudo/tests/test.yml
 
-if [ -d roles/microk8s ]; then
+if [ -f playbook.yml ] && [ -d roles/microk8s ]; then
   ANSIBLE_ROLES_PATH="$PWD/roles" ansible-playbook --syntax-check playbook.yml
+elif [ -f playbook.yml ]; then
+  echo 'SKIP: playbook.yml requires the absent roles/microk8s role.'
 else
-  echo 'SKIP: playbook.yml requires the absent roles/microk8s role (tracked as blocked in tests/validation-matrix.json).'
+  echo 'SKIP: legacy MicroK8s playbook retired; Talos lifecycle is owned by OpenTofu and Flux.'
 fi
 
 if [ "${RUN_MOLECULE:-0}" = 1 ]; then

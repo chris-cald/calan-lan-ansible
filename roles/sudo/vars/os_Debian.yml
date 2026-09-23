@@ -1,3 +1,4 @@
+---
 # file vars/Debian.yml
 privilege_group: sudo # On Debian/Ubuntu, use 'sudo'
-os_vars_loaded: true 
+os_vars_loaded: true

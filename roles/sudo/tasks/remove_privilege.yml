@@ -1,6 +1,7 @@
+---
 # Remove privileged access for user '{{ privileged_user }}'
 - name: Remove user from sudo group
-  include_tasks: remove_user_from_group.yml
+  ansible.builtin.include_tasks: remove_user_from_group.yml
   vars:
     group: "{{ privilege_group }}"
 
@@ -10,5 +11,5 @@
     state: absent
 
 - name: Ensure user '{{ privileged_user }}' does not exist
-  import_tasks: remove_user.yml
+  ansible.builtin.import_tasks: remove_user.yml
   when: not preserve_user | default(true)

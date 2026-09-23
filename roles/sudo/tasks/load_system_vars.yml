@@ -1,11 +1,12 @@
+---
 - name: Include variables based on distribution
-  include_vars: "{{ lookup('first_found', params) }}"
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
   vars:
     params:
       files:
-        - 'dist_{{ansible_distribution}}.yaml'
-        - 'os_{{ansible_os_family}}.yaml'
+        - "dist_{{ ansible_distribution }}.yaml"
+        - "os_{{ ansible_os_family }}.yaml"
         - os_defaults.yaml
       paths:
-        - 'vars'
+        - "vars"
   when: not os_vars_loaded | default(false)

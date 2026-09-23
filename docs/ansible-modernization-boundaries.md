@@ -27,14 +27,22 @@ or remove that reference as lint remediation. The choice changes cluster
 lifecycle and needs a dedicated migration decision covering the intended
 replacement, operator inputs, rollback limit, and validation evidence.
 
+**Decision:** Talos is the replacement path. Keep `playbook.yml` blocked until
+its dedicated migration/rollback plan is approved; do not restore the legacy
+MicroK8s dependency as an interim fix.
+
 **Boundary:** syntax or documentation work that does not change the entrypoint
-is allowed. Any role restoration, Talos replacement, or retirement is blocked
-pending approval.
+is allowed. Any Talos replacement or entrypoint retirement is blocked pending
+that migration approval.
 
 ### 004-B: sudo privilege role
 
 `roles/sudo/**` is the only current local role. Its tasks manage users, groups,
 and sudo access.
+
+**Decision:** add documented `sudo_*` aliases while preserving existing public
+inputs during a deprecation period. Alias precedence and the existing behavior
+must have offline contract coverage before privilege tasks change.
 
 **Boundary:** documentation, test harnesses, and task-local changes proven not
 to change privilege behavior may proceed. Changes to defaults, task order,
@@ -48,15 +56,21 @@ approval with an offline before/after contract test.
 `playbooks/awx/**`, `playbooks/podman/**`, and
 `playbooks/podman-semaphore/**` change controller or service state.
 
-**Boundary:** preserve protected inputs and do not convert shell/API behavior
-without a proposed payload, changed-state, and rollback analysis. Discovery
-and static analysis are safe; live convergence is not CI evidence.
+**Decision:** retire AWX and Semaphore now, and delete their runnable
+automation from the default branch. Do not preserve a disabled execution path.
+
+**Boundary:** removal remains a protected operator action; CI must not contact
+or remove a live controller service.
 
 ### 005-B: Proxmox and cloud-init
 
 `playbooks/proxmox-cloudinit/**`, `playbooks/proxmox-maint/**`, and
 `proxmox-util/**` affect VMs, cloud-init, packages, and caller-owned
 inventories.
+
+**Decision:** OpenTofu owns declarative VM/image lifecycle; Ansible owns
+operator-run Proxmox host maintenance from a dedicated SSH account with
+narrowly scoped sudo.
 
 **Boundary:** do not alter VM, host, package, inventory, or teardown behavior
 without an explicit approval and a caller-protected check/discovery plan.
@@ -65,6 +79,10 @@ without an explicit approval and a caller-protected check/discovery plan.
 
 `nvidia/**` changes drivers, vGPU state, bootloader configuration, and host or
 guest state.
+
+**Decision:** vGPU is required. Guarded Ansible owns Proxmox host setup;
+Talos guest support is blocked by `wi-vgpu-talos-compatibility-spike`, which
+must prove a compatible, license-compliant system extension before rollout.
 
 **Boundary:** only static/read-only analysis may proceed. Every command/module
 replacement, task reordering, or changed-state adjustment requires explicit
