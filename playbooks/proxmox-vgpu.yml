@@ -1,0 +1,22 @@
+---
+- name: Discover or configure guarded Proxmox vGPU hosts
+  hosts: all
+  become: true
+
+  pre_tasks:
+    - name: Require one caller-owned protected inventory
+      ansible.builtin.assert:
+        that:
+          - proxmox_vgpu_inventory is defined
+          - proxmox_vgpu_inventory | length > 0
+          - proxmox_vgpu_inventory is match('^/')
+          - ansible_inventory_sources | length == 1
+          - ansible_inventory_sources | first == proxmox_vgpu_inventory
+          - proxmox_vgpu_inventory is not match('^' ~ playbook_dir ~ '/')
+        fail_msg: >-
+          Pass one absolute inventory outside this checkout with -i and
+          -e proxmox_vgpu_inventory=/absolute/path/to/protected-hosts.ini.
+
+  roles:
+    - role: proxmox_vgpu_host
+    - role: proxmox_vgpu_mdev
