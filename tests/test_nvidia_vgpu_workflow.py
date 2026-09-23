@@ -27,7 +27,7 @@ class NvidiaVgpuWorkflowTests(unittest.TestCase):
 
     def test_unlock_uses_caller_supplied_pinned_artifacts(self) -> None:
         enable = (ROOT / "nvidia" / "tasks" / "nvidia_enable_vgpu.yml").read_text()
-        driver = (ROOT / "nvidia" / "tasks" / "nvidia_driver.yml").read_text()
+        driver = (ROOT / "nvidia" / "tasks" / "nvidia_vgpu_manager.yml").read_text()
         self.assertNotIn("ansible.builtin.git", enable)
         self.assertNotIn("cargo build", enable)
         self.assertNotIn("version: master", enable)
@@ -40,9 +40,15 @@ class NvidiaVgpuWorkflowTests(unittest.TestCase):
         facts = (ROOT / "nvidia" / "tasks" / "gather_nvidia_facts.yml").read_text()
         self.assertNotIn("ansible.builtin.shell", facts)
 
-    def test_guest_entrypoint_does_not_apply_the_nvenc_unlock_patch(self) -> None:
+    def test_bespoke_guest_patch_is_explicit_and_hash_verified(self) -> None:
         playbook = (ROOT / "nvidia" / "guest-playbook.yml").read_text()
-        self.assertNotIn("nvidia_enc_unlock_patch.yml", playbook)
+        patch = (ROOT / "nvidia" / "tasks" / "nvidia_guest_nvenc_patch.yml").read_text()
+        self.assertIn("nvidia_guest_apply: false", playbook)
+        self.assertIn("nvidia_guest_nvenc_patch_apply: false", playbook)
+        self.assertNotIn("vars_prompt", playbook)
+        for variable in ("nvidia_guest_nvenc_patch_path", "nvidia_guest_nvenc_patch_sha256"):
+            self.assertIn(variable, patch)
+        self.assertNotIn("ansible.builtin.git", patch)
 
 
 if __name__ == "__main__":

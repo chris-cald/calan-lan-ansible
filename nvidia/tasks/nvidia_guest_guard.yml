@@ -1,0 +1,14 @@
+---
+- name: Require explicit bespoke guest approval
+  when: nvidia_guest_apply | bool
+  ansible.builtin.assert:
+    that:
+      - nvidia_guest_confirmation == nvidia_guest_confirmation_value
+      - nvidia_guest_reboot | bool
+      - nvidia_guest_driver_path | length > 0
+      - nvidia_guest_driver_sha256 is match('^[a-fA-F0-9]{64}$')
+      - not nvidia_guest_nvenc_patch_apply | bool or nvidia_guest_nvenc_patch_path | length > 0
+      - not nvidia_guest_nvenc_patch_apply | bool or nvidia_guest_nvenc_patch_sha256 is match('^[a-fA-F0-9]{64}$')
+    fail_msg: >-
+      Bespoke guest mutation requires a typed confirmation, approved reboot, and
+      SHA-256-verified driver and optional NVENC patch artifacts.

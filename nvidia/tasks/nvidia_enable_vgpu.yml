@@ -47,7 +47,7 @@
         - reboot
 
     - name: Import NVIDIA Manager installation tasks
-      ansible.builtin.import_tasks: tasks/nvidia_driver.yml
+      ansible.builtin.import_tasks: tasks/nvidia_vgpu_manager.yml
 
     - name: List mediated-device types
       ansible.builtin.command:

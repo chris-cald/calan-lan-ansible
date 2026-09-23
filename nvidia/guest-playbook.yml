@@ -1,19 +1,34 @@
 ---
-- name: Configure guest system for NVIDIA
+- name: Configure a bespoke Linux NVIDIA guest
   hosts:
     - device_roles_vgpu_guest
     - device_roles_nvidia_gpu_guest
-  vars_prompt:
-    - name: nvidia_driver_path
-      prompt: "Path to the NVIDIA driver file (e.g., /path/to/NVIDIA-Linux-x86_64-570.148.08-grid.run)"
-      private: false
-      default: ~/Downloads/NVIDIA-GRID-Linux-KVM-570.148.06-570.148.08-573.07/Guest_Drivers/NVIDIA-Linux-x86_64-570.148.08-grid.run
+  become: true
+  vars:
+    nvidia_guest_apply: false
+    nvidia_guest_reboot: false
+    nvidia_guest_confirmation: ""
+    nvidia_guest_confirmation_value: apply-bespoke-nvidia-guest
+    nvidia_guest_driver_path: ""
+    nvidia_guest_driver_sha256: ""
+    nvidia_guest_nvenc_patch_apply: false
+    nvidia_guest_nvenc_patch_path: ""
+    nvidia_guest_nvenc_patch_sha256: ""
+  pre_tasks:
+    - name: Validate bespoke guest apply inputs
+      ansible.builtin.import_tasks: tasks/nvidia_guest_guard.yml
+
   tasks:
-    - name: Ensure NVIDIA driver installed on guest
-      ansible.builtin.include_tasks:
-        file: tasks/nvidia_driver.yml
-        apply:
-          tags: guest
+    - name: Install verified NVIDIA guest driver
+      when: nvidia_guest_apply | bool
+      ansible.builtin.import_tasks: tasks/nvidia_driver.yml
+
+    - name: Apply approved NVENC session-limit patch
+      when:
+        - nvidia_guest_apply | bool
+        - nvidia_guest_nvenc_patch_apply | bool
+      ansible.builtin.import_tasks: tasks/nvidia_guest_nvenc_patch.yml
+
   handlers:
-    - name: Import NVIDIA driver handlers
-      ansible.builtin.import_tasks: handlers/nvidia_driver_handlers.yml
+    - name: Import NVIDIA guest driver handlers
+      ansible.builtin.import_tasks: handlers/nvidia_guest_driver_handlers.yml

@@ -1,0 +1,27 @@
+---
+- name: Blacklist the nouveau driver module
+  community.general.kernel_blacklist:
+    name: nouveau
+    state: present
+    blacklist_file: /etc/modprobe.d/blacklist-nouveau.conf
+  notify:
+    - update-initramfs
+    - reboot
+
+- name: Install the verified prepatched NVIDIA vGPU Manager
+  ansible.builtin.copy:
+    src: "{{ nvidia_vgpu_driver_path }}"
+    dest: /opt/nvidia-vgpu-manager.run
+    mode: "0755"
+    checksum: "{{ nvidia_vgpu_driver_sha256 }}"
+  notify: reboot
+
+- name: Run the verified NVIDIA vGPU Manager installer
+  ansible.builtin.command:
+    cmd: /opt/nvidia-vgpu-manager.run --dkms -m=kernel
+  register: nvidia_vgpu_manager_install
+  changed_when: >-
+    nvidia_vgpu_manager_install.stdout is search(
+      'Installation of the NVIDIA Accelerated Graphics Driver .* is now complete\\.'
+    )
+  notify: reboot
