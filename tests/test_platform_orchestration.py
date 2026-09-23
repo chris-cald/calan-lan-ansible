@@ -41,7 +41,7 @@ def test_orchestration_is_default_discovery_with_fail_closed_rollback() -> None:
     defaults = read("roles/platform_orchestration/defaults/main.yml")
     tasks = read("roles/platform_orchestration/tasks/main.yml")
     assert "platform_orchestration_mode: discover" in defaults
-    assert "apply-platform-orchestration" in defaults
+    assert "apply-selected-platform-roles" in defaults
     assert "platform_orchestration_checkpoint_path" in tasks
     assert "automatic rollback" in tasks.lower()
     assert "set_stats" in tasks

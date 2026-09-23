@@ -1,0 +1,94 @@
+---
+- name: Discover installed Proxmox version
+  ansible.builtin.command:
+    argv: [pveversion]
+  register: platform_discovery_pve_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Discover PCI devices
+  ansible.builtin.command:
+    argv: [lspci, -nn]
+  register: platform_discovery_pci_devices
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Discover mediated-device tooling
+  ansible.builtin.command:
+    argv: [mdevctl, --version]
+  register: platform_discovery_mdevctl
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Discover IOMMU groups
+  ansible.builtin.stat:
+    path: /sys/kernel/iommu_groups
+  register: platform_discovery_iommu_groups
+  check_mode: false
+
+- name: Record platform eligibility and missing prerequisites
+  ansible.builtin.set_fact:
+    platform_discovery_result:
+      architecture: "{{ ansible_architecture }}"
+      proxmox_installed: "{{ platform_discovery_pve_version.rc == 0 }}"
+      proxmox_version: "{{ platform_discovery_pve_version.stdout | default('') }}"
+      nvidia_pci_detected: "{{ '[10de:' in (platform_discovery_pci_devices.stdout | default('')) }}"
+      iommu_groups_present: "{{ platform_discovery_iommu_groups.stat.exists }}"
+      mdevctl_available: "{{ platform_discovery_mdevctl.rc == 0 }}"
+      supported_roles:
+        proxmox_pi: "{{ 'proxmox_pi' in group_names and ansible_architecture in ['aarch64', 'arm64'] }}"
+        proxmox_x64: "{{ 'proxmox_x64' in group_names and ansible_architecture in ['x86_64', 'amd64'] }}"
+        proxmox_arm64: "{{ 'proxmox_arm64' in group_names and ansible_architecture in ['aarch64', 'arm64'] }}"
+        proxmox_existing: "{{ 'proxmox_existing' in group_names and platform_discovery_pve_version.rc == 0 }}"
+        proxmox_vgpu_host: >-
+          {{ 'proxmox_vgpu' in group_names and
+             ansible_architecture in ['x86_64', 'amd64'] and
+             '[10de:' in (platform_discovery_pci_devices.stdout | default('')) }}
+        proxmox_vgpu_mdev: >-
+          {{ 'proxmox_vgpu' in group_names and
+             platform_discovery_mdevctl.rc == 0 }}
+      missing_requirements:
+        proxmox_vgpu_host:
+          - caller-selected NVIDIA Manager artifact path and SHA-256
+          - typed host and unlock confirmations
+        proxmox_vgpu_mdev:
+          - caller-selected mdev parent, profile, and UUID
+        talos_handoff:
+          - caller-owned OpenTofu root and protected tfvars path
+
+- name: Require selected roles to be supported by their target
+  when: platform_orchestration_mode == 'apply'
+  ansible.builtin.assert:
+    that:
+      - >-
+        'proxmox_pi' not in platform_orchestration_requested_roles or
+        'proxmox_pi' not in group_names or
+        (platform_discovery_result.supported_roles.proxmox_pi | bool)
+      - >-
+        'proxmox_x64' not in platform_orchestration_requested_roles or
+        'proxmox_x64' not in group_names or
+        (platform_discovery_result.supported_roles.proxmox_x64 | bool)
+      - >-
+        'proxmox_arm64' not in platform_orchestration_requested_roles or
+        'proxmox_arm64' not in group_names or
+        (platform_discovery_result.supported_roles.proxmox_arm64 | bool)
+      - >-
+        'proxmox_existing' not in platform_orchestration_requested_roles or
+        'proxmox_existing' not in group_names or
+        (platform_discovery_result.supported_roles.proxmox_existing | bool)
+      - >-
+        'proxmox_vgpu_host' not in platform_orchestration_requested_roles or
+        'proxmox_vgpu' not in group_names or
+        (platform_discovery_result.supported_roles.proxmox_vgpu_host | bool)
+      - >-
+        'proxmox_vgpu_mdev' not in platform_orchestration_requested_roles or
+        'proxmox_vgpu' not in group_names or
+        (platform_discovery_result.supported_roles.proxmox_vgpu_mdev | bool) or
+        ('proxmox_vgpu_host' in platform_orchestration_requested_roles and
+         (platform_discovery_result.supported_roles.proxmox_vgpu_host | bool))
+    fail_msg: >-
+      A selected role is unsupported by this target. Review the protected
+      discovery checkpoint and select only supported roles.

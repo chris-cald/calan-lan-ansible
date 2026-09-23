@@ -17,12 +17,20 @@
     that:
       - platform_orchestration_mode in ['discover', 'apply', 'rollback']
       - platform_orchestration_mode != 'apply' or platform_orchestration_confirmation == platform_orchestration_confirmation_value
-      - platform_orchestration_mode == 'discover' or platform_orchestration_checkpoint_path is match('^/')
-      - platform_orchestration_mode == 'discover' or platform_orchestration_talos_handoff_path is match('^/')
+      - platform_orchestration_state_directory is match('^/')
+      - platform_orchestration_state_directory is not match('^' ~ playbook_dir ~ '/')
+      - platform_orchestration_checkpoint_path is match('^/')
+      - platform_orchestration_checkpoint_path is not match('^' ~ playbook_dir ~ '/')
+      - platform_orchestration_talos_handoff_path is match('^/')
+      - platform_orchestration_talos_handoff_path is not match('^' ~ playbook_dir ~ '/')
+      - >-
+        platform_orchestration_requested_roles | difference([
+        'proxmox_pi', 'proxmox_x64', 'proxmox_arm64', 'proxmox_existing',
+        'proxmox_vgpu_host', 'proxmox_vgpu_mdev', 'talos_handoff']) | length == 0
     fail_msg: >-
-      Use discovery by default. Apply and rollback require a caller-owned
-      absolute checkpoint and Talos handoff path; apply also requires the typed
-      apply-platform-orchestration confirmation.
+      Use discovery by default. Apply requires the typed
+      apply-selected-platform-roles confirmation and selected known roles.
+      State and handoff paths must remain outside the checkout.
   delegate_to: localhost
   run_once: true
 
@@ -39,7 +47,8 @@
   ansible.builtin.assert:
     that: platform_orchestration_checkpoint.stat.exists
     fail_msg: >-
-      Refusing to proceed without the caller-owned pre-change checkpoint.
+      Refusing to proceed without the protected discovery checkpoint. Run
+      discovery first and keep its generated state outside the checkout.
   delegate_to: localhost
   run_once: true
 
@@ -58,7 +67,7 @@
   ansible.builtin.debug:
     msg: >-
       Automatic rollback is intentionally unavailable for Proxmox installation
-      and cluster membership. Restore the caller-owned checkpoint manually;
+      and cluster membership. Restore the protected checkpoint manually;
       this run makes no host, cluster, VM, Talos, or Flux changes.
   delegate_to: localhost
   run_once: true

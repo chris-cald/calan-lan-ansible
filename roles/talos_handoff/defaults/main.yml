@@ -3,3 +3,4 @@ talos_handoff_apply: false
 talos_handoff_path: ""
 talos_handoff_opentofu_root: ""
 talos_handoff_tfvars_path: ""
+talos_handoff_flux_kustomization: infrastructure

@@ -6,6 +6,14 @@
   roles:
     - role: platform_orchestration
 
+- name: Discover platform role eligibility
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: platform_orchestration
+    - role: platform_discovery
+
 - name: Bootstrap SSH-ready Raspberry Pi Proxmox nodes
   hosts: proxmox_pi
   become: true
@@ -16,7 +24,10 @@
     - role: proxmox_pi
       proxmox_pi_apply: >-
         {{ platform_orchestration_mode == 'apply' and
-           (platform_orchestration_pi_apply_requested | bool) }}
+           'proxmox_pi' in platform_orchestration_requested_roles }}
+      proxmox_pi_confirm: >-
+        {{ 'provision-proxmox-pi' if platform_orchestration_confirmation ==
+           platform_orchestration_confirmation_value else '' }}
 
 - name: Bootstrap SSH-ready x64 Proxmox nodes
   hosts: proxmox_x64
@@ -28,7 +39,10 @@
     - role: proxmox_x64
       proxmox_x64_apply: >-
         {{ platform_orchestration_mode == 'apply' and
-           (platform_orchestration_x64_apply_requested | bool) }}
+           'proxmox_x64' in platform_orchestration_requested_roles }}
+      proxmox_x64_confirm: >-
+        {{ 'provision-proxmox-x64' if platform_orchestration_confirmation ==
+           platform_orchestration_confirmation_value else '' }}
 
 - name: Bootstrap SSH-ready supported ARM Proxmox nodes
   hosts: proxmox_arm64
@@ -40,7 +54,10 @@
     - role: proxmox_arm64
       proxmox_arm64_apply: >-
         {{ platform_orchestration_mode == 'apply' and
-           (platform_orchestration_arm64_apply_requested | bool) }}
+           'proxmox_arm64' in platform_orchestration_requested_roles }}
+      proxmox_arm64_confirm: >-
+        {{ 'provision-proxmox-arm64' if platform_orchestration_confirmation ==
+           platform_orchestration_confirmation_value else '' }}
 
 - name: Validate or configure existing Proxmox nodes
   hosts: proxmox_existing
@@ -52,7 +69,10 @@
     - role: proxmox_existing
       proxmox_existing_apply: >-
         {{ platform_orchestration_mode == 'apply' and
-           (platform_orchestration_existing_apply_requested | bool) }}
+           'proxmox_existing' in platform_orchestration_requested_roles }}
+      proxmox_existing_confirmation: >-
+        {{ 'configure-existing-proxmox' if platform_orchestration_confirmation ==
+           platform_orchestration_confirmation_value else '' }}
 
 - name: Declare future BMC or Pixie provisioning handoff
   hosts: localhost
@@ -72,11 +92,21 @@
     - role: proxmox_vgpu_host
       proxmox_vgpu_host_apply: >-
         {{ platform_orchestration_mode == 'apply' and
-           (platform_orchestration_vgpu_host_apply_requested | bool) }}
+           'proxmox_vgpu_host' in platform_orchestration_requested_roles }}
+      proxmox_vgpu_host_reboot: >-
+        {{ 'proxmox_vgpu_host' in platform_orchestration_requested_roles }}
+      proxmox_vgpu_host_confirmation: >-
+        {{ 'apply-proxmox-vgpu-host' if platform_orchestration_confirmation ==
+           platform_orchestration_confirmation_value else '' }}
     - role: proxmox_vgpu_unlock
       proxmox_vgpu_unlock_apply: >-
         {{ platform_orchestration_mode == 'apply' and
-           (platform_orchestration_vgpu_host_apply_requested | bool) }}
+           'proxmox_vgpu_host' in platform_orchestration_requested_roles }}
+      proxmox_vgpu_unlock_reboot: >-
+        {{ 'proxmox_vgpu_host' in platform_orchestration_requested_roles }}
+      proxmox_vgpu_unlock_confirmation: >-
+        {{ 'apply-proxmox-vgpu-unlock' if platform_orchestration_confirmation ==
+           platform_orchestration_confirmation_value else '' }}
 
 - name: Configure optional mediated devices after reboot
   hosts: proxmox_vgpu
@@ -88,7 +118,10 @@
     - role: proxmox_vgpu_mdev
       proxmox_vgpu_mdev_apply: >-
         {{ platform_orchestration_mode == 'apply' and
-           (platform_orchestration_vgpu_mdev_apply_requested | bool) }}
+           'proxmox_vgpu_mdev' in platform_orchestration_requested_roles }}
+      proxmox_vgpu_mdev_confirmation: >-
+        {{ 'apply-proxmox-vgpu-mdev' if platform_orchestration_confirmation ==
+           platform_orchestration_confirmation_value else '' }}
 
 - name: Record the handoff to OpenTofu Talos provisioning
   hosts: localhost
@@ -99,5 +132,6 @@
     - role: talos_handoff
       talos_handoff_apply: >-
         {{ platform_orchestration_mode == 'apply' and
-           (platform_orchestration_talos_handoff_requested | bool) }}
+           'talos_handoff' in platform_orchestration_requested_roles }}
       talos_handoff_path: "{{ platform_orchestration_talos_handoff_path }}"
+    - role: platform_handoff

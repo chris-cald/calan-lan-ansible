@@ -10,6 +10,7 @@ python3 tests/test_vgpu_compatibility_manifest.py
 python3 tests/test_nvidia_vgpu_workflow.py
 python3 tests/test_proxmox_vgpu_roles.py
 python3 tests/test_platform_orchestration.py
+python3 tests/test_platform_discovery_resume.py
 sh tests/proxmox_platform_roles_contract.sh
 sh tests/proxmox_pi_contract.sh
 python3 tests/test_proxmox_vgpu_unlock_podman.py
