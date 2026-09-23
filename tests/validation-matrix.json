@@ -48,6 +48,26 @@
       "evidence": "discovery"
     },
     {
+      "pattern": "roles/platform_orchestration/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/proxmox_existing/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/proxmox_bmc_pixie/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/talos_handoff/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
       "pattern": "playbooks/proxmox-pi.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
@@ -59,6 +79,11 @@
     },
     {
       "pattern": "playbooks/proxmox-arm64.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/platform-orchestration.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
     },

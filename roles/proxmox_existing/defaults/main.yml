@@ -1,0 +1,15 @@
+---
+proxmox_existing_apply: false
+proxmox_existing_confirmation: ""
+proxmox_existing_confirmation_value: configure-existing-proxmox
+proxmox_existing_cluster_mode: validate
+proxmox_existing_cluster_architecture: same
+proxmox_existing_mixed_architecture_acknowledgement: ""
+proxmox_existing_mixed_architecture_confirmation: accept-mixed-architecture-proxmox-cluster
+proxmox_existing_cluster_name: ""
+proxmox_existing_cluster_link0_address: ""
+proxmox_existing_cluster_join_address: ""
+proxmox_existing_cluster_join_fingerprint: ""
+proxmox_existing_cluster_join_password: ""
+proxmox_existing_cluster_join_data_loss_acknowledgement: ""
+proxmox_existing_cluster_join_data_loss_confirmation: join-will-overwrite-etc-pve
