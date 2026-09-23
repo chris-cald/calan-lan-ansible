@@ -24,6 +24,11 @@
       "evidence": "discovery"
     },
     {
+      "pattern": "roles/proxmox_vgpu_unlock/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
       "pattern": "playbooks/proxmox-vgpu.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
