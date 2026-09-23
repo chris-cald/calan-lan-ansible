@@ -130,7 +130,7 @@ private/
 /playbooks/podman-semaphore/inventory
 /playbooks/awx/awx-github.pub
 
-# OpenTofu/Terraform state and caller-supplied topology
+# OpenTofu state and caller-supplied topology
 .terraform/
 *.tfstate
 *.tfstate.*

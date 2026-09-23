@@ -2,7 +2,7 @@
 
 ## Decision
 
-Run a single Talos control-plane VM on Proxmox. OpenTofu/Terraform owns VM and
+Run a single Talos control-plane VM on Proxmox. OpenTofu owns VM and
 Talos lifecycle; Flux owns in-cluster manifests; NetBox is the address-pool
 authority. The cluster may expand to three control-plane VMs without changing
 its GitOps layout.
