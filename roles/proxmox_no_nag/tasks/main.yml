@@ -1,0 +1,100 @@
+---
+- name: Validate no-nag inputs
+  ansible.builtin.import_tasks: guard.yml
+
+- name: Read Proxmox version
+  ansible.builtin.command:
+    argv: [pveversion]
+  register: proxmox_no_nag_pve_version
+  changed_when: false
+
+- name: Configure selected Proxmox post-install behavior
+  when: proxmox_no_nag_apply | bool
+  block:
+    - name: Require a supported Proxmox 9 release
+      ansible.builtin.assert:
+        that: proxmox_no_nag_pve_version.stdout is search('pve-manager/9\.[0-2]\.')
+        fail_msg: The reviewed no-nag source layout supports Proxmox VE 9.0 through 9.2 only.
+
+    - name: Check the supported Proxmox web UI asset exists
+      ansible.builtin.stat:
+        path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+      register: proxmox_no_nag_web_ui_asset
+
+    - name: Require the supported Proxmox web UI asset
+      ansible.builtin.assert:
+        that: proxmox_no_nag_web_ui_asset.stat.exists
+        fail_msg: The supported Proxmox web UI asset is absent; no patch was applied.
+
+    - name: Find deb822 source files
+      ansible.builtin.find:
+        paths: /etc/apt/sources.list.d
+        patterns: "*.sources"
+        file_type: file
+      register: proxmox_no_nag_deb822_sources
+
+    - name: Read deb822 source files
+      ansible.builtin.slurp:
+        src: "{{ item.path }}"
+      loop: "{{ proxmox_no_nag_deb822_sources.files }}"
+      register: proxmox_no_nag_deb822_contents
+
+    - name: Disable PVE enterprise deb822 sources
+      ansible.builtin.lineinfile:
+        path: "{{ item.item.path }}"
+        regexp: '^Enabled:'
+        line: 'Enabled: false'
+        insertafter: EOF
+      loop: "{{ proxmox_no_nag_deb822_contents.results }}"
+      when: "'pve-enterprise' in (item.content | b64decode)"
+
+    - name: Find legacy apt source files
+      ansible.builtin.find:
+        paths: /etc/apt/sources.list.d
+        patterns: "*.list"
+        file_type: file
+      register: proxmox_no_nag_legacy_sources
+
+    - name: Disable legacy PVE enterprise source lines
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: '^(deb\s+https?://enterprise\.proxmox\.com/.*pve-enterprise.*)$'
+        replace: '# \1'
+      loop: "{{ proxmox_no_nag_legacy_sources.files }}"
+
+    - name: Install PVE no-subscription source
+      ansible.builtin.template:
+        src: proxmox-no-subscription.sources.j2
+        dest: /etc/apt/sources.list.d/proxmox-no-subscription.sources
+        mode: "0644"
+
+    - name: Update apt cache after source changes
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install local no-nag patch script
+      ansible.builtin.copy:
+        src: proxmox-remove-nag
+        dest: /usr/local/sbin/proxmox-remove-nag
+        mode: "0755"
+
+    - name: Run local no-nag patch script
+      ansible.builtin.command:
+        argv: [/usr/local/sbin/proxmox-remove-nag]
+      changed_when: false
+
+    - name: Verify local no-nag patch result
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -q
+          - NoMoreNagging
+          - /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+      changed_when: false
+
+    - name: Maintain no-nag post-DPkg hook
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/99proxmox-no-nag
+        mode: "0644"
+        content: |
+          DPkg::Post-Invoke { "/usr/local/sbin/proxmox-remove-nag"; };

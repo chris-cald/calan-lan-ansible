@@ -1,0 +1,12 @@
+---
+- name: Require explicit no-nag and repository approval
+  when: proxmox_no_nag_apply | bool
+  ansible.builtin.assert:
+    that:
+      - proxmox_no_nag_confirmation == proxmox_no_nag_confirmation_value
+      - proxmox_no_nag_debian_suite == 'trixie'
+      - proxmox_no_nag_repository_url == 'http://download.proxmox.com/debian/pve'
+      - proxmox_no_nag_keyring == '/usr/share/keyrings/proxmox-archive-keyring.gpg'
+    fail_msg: >-
+      The no-nag role only supports the reviewed PVE 9 no-subscription source
+      and requires the typed apply-proxmox-no-nag confirmation.
