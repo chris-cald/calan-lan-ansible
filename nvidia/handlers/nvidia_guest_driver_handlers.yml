@@ -1,0 +1,15 @@
+---
+- name: Update guest initramfs
+  listen: update-initramfs
+  ansible.builtin.command:
+    cmd: update-initramfs -u -k all
+  changed_when: true
+
+- name: Reboot approved NVIDIA guest
+  listen: reboot-guest
+  ansible.builtin.reboot:
+    msg: Rebooting to apply approved NVIDIA guest changes
+    connect_timeout: 5
+    pre_reboot_delay: 0
+    post_reboot_delay: 10
+  when: nvidia_guest_reboot | bool

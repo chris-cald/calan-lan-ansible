@@ -15,5 +15,7 @@ Repository-owned operational and engineering contracts:
   the approved tool boundary, bootstrap order, and platform constraints.
 - [Talos vGPU compatibility spike](talos-vgpu-compatibility.md) — protected
   input contract and offline gate for the required host/guest driver proof.
+- [Self-supported vGPU architecture](talos-vgpu-architecture.md) — Ansible,
+  OpenTofu, Talos, and Flux boundaries plus operational checkpoints.
 
 Upstream submodules retain their own documentation and release processes.

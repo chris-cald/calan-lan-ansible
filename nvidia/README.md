@@ -17,6 +17,11 @@ patch third-party software on the host.
 This is a self-supported lab path. Validate mediated-device types and the
 Talos extension in a disposable VM before Flux deploys any GPU workload.
 
+`guest-playbook.yml` is only for a bespoke Linux VM. It likewise defaults to
+no mutation and accepts an optional NVENC session-limit patch only as a
+caller-supplied SHA-256-verified artifact. Never use it for Talos; add the
+same optional patch during the Talos extension build instead.
+
 Offline checks:
 
 ```sh

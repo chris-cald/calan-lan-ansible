@@ -15,6 +15,9 @@ REQUIRED = {
     "license_reviewed",
     "compatibility_reference",
     "extension_source",
+    "guest_driver_artifact_path",
+    "guest_driver_artifact_sha256",
+    "nvenc_patch_enabled",
 }
 
 
@@ -49,6 +52,21 @@ def main() -> int:
     if not values["compatibility_reference"].startswith("https://"):
         print("compatibility_reference must be an HTTPS source", file=sys.stderr)
         return 1
+    if not all(char in "0123456789abcdefABCDEF" for char in values["guest_driver_artifact_sha256"]) or len(values["guest_driver_artifact_sha256"]) != 64:
+        print("guest_driver_artifact_sha256 must be a SHA-256 digest", file=sys.stderr)
+        return 1
+    if values["nvenc_patch_enabled"].lower() not in {"true", "false"}:
+        print("nvenc_patch_enabled must be true or false", file=sys.stderr)
+        return 1
+    if values["nvenc_patch_enabled"].lower() == "true":
+        patch_fields = {"nvenc_patch_source", "nvenc_patch_revision", "nvenc_patch_sha256"}
+        missing_patch_fields = sorted(key for key in patch_fields if not values.get(key))
+        if missing_patch_fields:
+            print(f"missing NVENC patch fields: {', '.join(missing_patch_fields)}", file=sys.stderr)
+            return 1
+        if len(values["nvenc_patch_sha256"]) != 64 or not all(char in "0123456789abcdefABCDEF" for char in values["nvenc_patch_sha256"]):
+            print("nvenc_patch_sha256 must be a SHA-256 digest", file=sys.stderr)
+            return 1
     return 0
 
 
