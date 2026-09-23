@@ -1,3 +1,4 @@
+---
 # file vars/os_defaults.yml
 privilege_group: sudo
-os_vars_loaded: true 
+os_vars_loaded: true

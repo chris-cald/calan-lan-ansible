@@ -1,3 +1,4 @@
+---
 # file vars/RedHat.yml
 privilege_group: wheel
-os_vars_loaded: true 
+os_vars_loaded: true

@@ -2,3 +2,9 @@
 ---
 # defaults file for sudo
 password_required: true
+
+# Compatibility aliases: when set, sudo_* values override legacy inputs.
+# sudo_privileged_user
+# sudo_privileged_group
+# sudo_password_required
+# sudo_preserve_user

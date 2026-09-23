@@ -1,0 +1,20 @@
+---
+- name: Apply sudo compatibility aliases
+  ansible.builtin.set_fact:
+    privileged_user: "{{ sudo_privileged_user }}"
+  when: sudo_privileged_user is defined
+
+- name: Apply sudo group compatibility alias
+  ansible.builtin.set_fact:
+    privilege_group: "{{ sudo_privileged_group }}"
+  when: sudo_privileged_group is defined
+
+- name: Apply sudo password compatibility alias
+  ansible.builtin.set_fact:
+    password_required: "{{ sudo_password_required }}"
+  when: sudo_password_required is defined
+
+- name: Apply sudo user-retention compatibility alias
+  ansible.builtin.set_fact:
+    preserve_user: "{{ sudo_preserve_user }}"
+  when: sudo_preserve_user is defined
