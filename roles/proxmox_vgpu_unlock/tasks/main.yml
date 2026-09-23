@@ -1,0 +1,253 @@
+---
+- name: Validate vGPU unlock inputs
+  ansible.builtin.import_tasks: guard.yml
+
+- name: Build and apply pinned vGPU unlock payload
+  when: proxmox_vgpu_unlock_apply | bool
+  block:
+    - name: Create protected controller build directory
+      ansible.builtin.file:
+        path: "{{ proxmox_vgpu_unlock_builder_directory }}"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+
+    - name: Download pinned vGPU unlock source archive
+      ansible.builtin.get_url:
+        url: "{{ proxmox_vgpu_unlock_source_url }}"
+        dest: "{{ proxmox_vgpu_unlock_builder_directory }}/source.tar.gz"
+        checksum: "sha256:{{ proxmox_vgpu_unlock_source_sha256 }}"
+        mode: "0600"
+      delegate_to: localhost
+      become: false
+
+    - name: Recreate Podman build context
+      ansible.builtin.file:
+        path: "{{ proxmox_vgpu_unlock_builder_directory }}/context"
+        state: absent
+      delegate_to: localhost
+      become: false
+
+    - name: Create Podman build context
+      ansible.builtin.file:
+        path: "{{ proxmox_vgpu_unlock_builder_directory }}/context"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+
+    - name: Extract pinned vGPU unlock source into build context
+      ansible.builtin.unarchive:
+        src: "{{ proxmox_vgpu_unlock_builder_directory }}/source.tar.gz"
+        dest: "{{ proxmox_vgpu_unlock_builder_directory }}/context"
+        remote_src: true
+      delegate_to: localhost
+      become: false
+
+    - name: Write local vGPU unlock Containerfile
+      ansible.builtin.template:
+        src: Containerfile.j2
+        dest: "{{ proxmox_vgpu_unlock_builder_directory }}/context/Containerfile"
+        mode: "0600"
+      delegate_to: localhost
+      become: false
+
+    - name: Check local vGPU unlock Podman image
+      ansible.builtin.command:
+        argv: [podman, image, exists, "{{ proxmox_vgpu_unlock_image }}"]
+      register: proxmox_vgpu_unlock_local_image
+      changed_when: false
+      failed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Build pinned local vGPU unlock Podman image
+      ansible.builtin.command:
+        argv:
+          - podman
+          - build
+          - --platform
+          - "{{ proxmox_vgpu_unlock_platform }}"
+          - --pull=never
+          - --tag
+          - "{{ proxmox_vgpu_unlock_image }}"
+          - "{{ proxmox_vgpu_unlock_builder_directory }}/context"
+      when: proxmox_vgpu_unlock_local_image.rc != 0
+      changed_when: true
+      delegate_to: localhost
+      become: false
+
+    - name: Save local vGPU unlock Podman image archive
+      ansible.builtin.command:
+        argv:
+          - podman
+          - save
+          - --format
+          - oci-archive
+          - --output
+          - "{{ proxmox_vgpu_unlock_builder_directory }}/vgpu-unlock.oci"
+          - "{{ proxmox_vgpu_unlock_image }}"
+      delegate_to: localhost
+      become: false
+      changed_when: false
+
+    - name: Calculate local vGPU unlock image archive digest
+      ansible.builtin.stat:
+        path: "{{ proxmox_vgpu_unlock_builder_directory }}/vgpu-unlock.oci"
+        checksum_algorithm: sha256
+      register: proxmox_vgpu_unlock_local_archive
+      delegate_to: localhost
+      become: false
+
+    - name: Create vGPU unlock artifact directory
+      ansible.builtin.file:
+        path: "{{ proxmox_vgpu_unlock_artifact_directory }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy verified vGPU unlock image archive to Proxmox host
+      ansible.builtin.copy:
+        src: "{{ proxmox_vgpu_unlock_builder_directory }}/vgpu-unlock.oci"
+        dest: "{{ proxmox_vgpu_unlock_artifact_directory }}/vgpu-unlock.oci"
+        mode: "0600"
+
+    - name: Calculate copied vGPU unlock image archive digest
+      ansible.builtin.stat:
+        path: "{{ proxmox_vgpu_unlock_artifact_directory }}/vgpu-unlock.oci"
+        checksum_algorithm: sha256
+      register: proxmox_vgpu_unlock_remote_archive
+
+    - name: Verify copied vGPU unlock image archive
+      ansible.builtin.assert:
+        that: >-
+          proxmox_vgpu_unlock_remote_archive.stat.checksum ==
+          proxmox_vgpu_unlock_local_archive.stat.checksum
+        fail_msg: The copied vGPU unlock image archive checksum does not match the local builder output.
+
+    - name: Load local vGPU unlock Podman image on Proxmox host
+      ansible.builtin.command:
+        argv:
+          - podman
+          - load
+          - --input
+          - "{{ proxmox_vgpu_unlock_artifact_directory }}/vgpu-unlock.oci"
+      changed_when: false
+
+    - name: Remove stale vGPU unlock payload container
+      ansible.builtin.command:
+        argv: [podman, rm, --force, calan-vgpu-unlock-payload]
+      changed_when: false
+      failed_when: false
+
+    - name: Create vGPU unlock payload container without running it
+      ansible.builtin.command:
+        argv: [podman, create, --name, calan-vgpu-unlock-payload, "{{ proxmox_vgpu_unlock_image }}"]
+      changed_when: true
+
+    - name: Create vGPU unlock payload directory
+      ansible.builtin.file:
+        path: "{{ proxmox_vgpu_unlock_artifact_directory }}/payload"
+        state: directory
+        mode: "0755"
+
+    - name: Extract vGPU unlock payload without running a container
+      ansible.builtin.command:
+        argv:
+          - podman
+          - cp
+          - calan-vgpu-unlock-payload:/payload/.
+          - "{{ proxmox_vgpu_unlock_artifact_directory }}/payload"
+      changed_when: true
+
+    - name: Remove vGPU unlock payload container
+      ansible.builtin.command:
+        argv: [podman, rm, calan-vgpu-unlock-payload]
+      changed_when: false
+
+    - name: Check extracted vGPU unlock payload files
+      ansible.builtin.stat:
+        path: "{{ proxmox_vgpu_unlock_artifact_directory }}/payload/{{ item }}"
+      loop:
+        - vgpu_unlock
+        - vgpu_unlock_hooks.c
+        - kern.ld
+      register: proxmox_vgpu_unlock_payload_files
+
+    - name: Require extracted vGPU unlock payload files
+      ansible.builtin.assert:
+        that: >-
+          (proxmox_vgpu_unlock_payload_files.results |
+          selectattr('stat.exists') | list | length) == 3
+        fail_msg: The vGPU unlock image did not provide the complete reviewed payload.
+
+    - name: Ensure the vGPU unlock wrapper is executable
+      ansible.builtin.file:
+        path: "{{ proxmox_vgpu_unlock_artifact_directory }}/payload/vgpu_unlock"
+        mode: "0755"
+
+    - name: Check NVIDIA DKMS source files
+      ansible.builtin.stat:
+        path: "/usr/src/nvidia-{{ proxmox_vgpu_unlock_dkms_version }}/nvidia/{{ item }}"
+      loop:
+        - os-interface.c
+        - nvidia.Kbuild
+      register: proxmox_vgpu_unlock_dkms_files
+
+    - name: Require NVIDIA DKMS source files
+      ansible.builtin.assert:
+        that: >-
+          (proxmox_vgpu_unlock_dkms_files.results |
+          selectattr('stat.exists') | list | length) == 2
+        fail_msg: The requested NVIDIA DKMS source tree is absent; no DKMS patch was applied.
+
+    - name: Add vGPU unlock hooks to NVIDIA DKMS source
+      ansible.builtin.lineinfile:
+        path: "/usr/src/nvidia-{{ proxmox_vgpu_unlock_dkms_version }}/nvidia/os-interface.c"
+        regexp: '^#include "{{ proxmox_vgpu_unlock_artifact_directory }}/payload/vgpu_unlock_hooks\\.c"$'
+        line: '#include "{{ proxmox_vgpu_unlock_artifact_directory }}/payload/vgpu_unlock_hooks.c"'
+        insertafter: '^#include'
+      register: proxmox_vgpu_unlock_hook_patch
+
+    - name: Add vGPU unlock linker script to NVIDIA DKMS source
+      ansible.builtin.lineinfile:
+        path: "/usr/src/nvidia-{{ proxmox_vgpu_unlock_dkms_version }}/nvidia/nvidia.Kbuild"
+        regexp: '^ldflags-y \+= -T {{ proxmox_vgpu_unlock_artifact_directory }}/payload/kern\\.ld$'
+        line: 'ldflags-y += -T {{ proxmox_vgpu_unlock_artifact_directory }}/payload/kern.ld'
+      register: proxmox_vgpu_unlock_kbuild_patch
+
+    - name: Rebuild patched NVIDIA DKMS module
+      when: proxmox_vgpu_unlock_hook_patch.changed or proxmox_vgpu_unlock_kbuild_patch.changed
+      block:
+        - name: Remove existing NVIDIA DKMS module
+          ansible.builtin.command:
+            argv: [dkms, remove, -m, nvidia, -v, "{{ proxmox_vgpu_unlock_dkms_version }}", --all]
+          changed_when: true
+
+        - name: Install patched NVIDIA DKMS module
+          ansible.builtin.command:
+            argv: [dkms, install, -m, nvidia, -v, "{{ proxmox_vgpu_unlock_dkms_version }}"]
+          changed_when: true
+          notify: reboot Proxmox vGPU unlock host
+
+    - name: Create NVIDIA vGPU service override directories
+      ansible.builtin.file:
+        path: "/etc/systemd/system/{{ item }}.service.d"
+        state: directory
+        mode: "0755"
+      loop:
+        - nvidia-vgpud
+        - nvidia-vgpu-mgr
+
+    - name: Configure NVIDIA vGPU service wrappers
+      ansible.builtin.copy:
+        dest: "/etc/systemd/system/{{ item }}.service.d/vgpu_unlock.conf"
+        mode: "0644"
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart={{ proxmox_vgpu_unlock_artifact_directory }}/payload/vgpu_unlock /usr/bin/{{ item }}
+      loop:
+        - nvidia-vgpud
+        - nvidia-vgpu-mgr
+      notify: reload systemd for vGPU unlock

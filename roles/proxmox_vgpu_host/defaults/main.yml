@@ -5,10 +5,10 @@ proxmox_vgpu_host_confirmation: ""
 proxmox_vgpu_host_confirmation_value: apply-proxmox-vgpu-host
 proxmox_vgpu_host_manager_path: ""
 proxmox_vgpu_host_manager_sha256: ""
-proxmox_vgpu_host_unlock_path: ""
-proxmox_vgpu_host_unlock_sha256: ""
 proxmox_vgpu_host_packages:
   - build-essential
   - dkms
   - mdevctl
+  - podman
+  - python3
   - "pve-headers-{{ ansible_kernel }}"

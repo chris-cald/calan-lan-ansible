@@ -8,7 +8,7 @@ and credentials stay in protected operator inputs.
 
 | Layer | Owner | Responsibility |
 | --- | --- | --- |
-| Proxmox host | Guarded Ansible | `proxmox_vgpu_host` bootstraps IOMMU, VFIO, prepatched Manager, and unlock overrides; `proxmox_vgpu_mdev` creates one validated mediated device after reboot. |
+| Proxmox host | Guarded Ansible | `proxmox_vgpu_host` bootstraps IOMMU, VFIO, and Manager; `proxmox_vgpu_unlock` builds a pinned local Podman payload and applies the self-supported DKMS/service changes; `proxmox_vgpu_mdev` creates one validated mediated device after reboot. |
 | VM lifecycle | OpenTofu | Disposable VM, snapshot lifecycle, and mediated-device attachment after host discovery passes. |
 | Talos guest | Image/system-extension build | Pinned guest driver and, if selected, the NVENC patch. Talos is not SSH-managed. |
 | Kubernetes workloads | Flux | NVIDIA device plugin, optional monitoring, and constrained GPU test workload. |
@@ -20,8 +20,10 @@ and credentials stay in protected operator inputs.
    `tests/validate_vgpu_compatibility_manifest.py`.
 2. Run `playbooks/proxmox-vgpu.yml` with a caller-owned inventory. Mutation
    remains disabled unless both roles receive their typed confirmations. The
-   Manager and unlock library are prebuilt artifacts verified by SHA-256; the
-   host never clones or builds third-party sources.
+   Manager is a SHA-256-verified protected artifact. The unlock role fetches a
+   pinned, SHA-256-verified source archive on the protected controller, builds
+   a local `FROM scratch` Podman payload image, and extracts it on the host
+   without running a container. The host never clones third-party sources.
 3. After the host role reboots and `mdevctl types` exposes the intended profile,
    run the mdev role, then let OpenTofu attach that UUID to the disposable VM.
    profile to a disposable VM. Record the VM and snapshot outside Git.
