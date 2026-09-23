@@ -1,16 +1,20 @@
 ---
 - name: Update initramfs
   listen: update-initramfs
-  become: true
   ansible.builtin.command:
     cmd: update-initramfs -u -k all
-  tags:
-    - skip_ansible_lint
-- name: Reboot
+  changed_when: true
+
+- name: Reload systemd
+  listen: reload-systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Reboot approved self-supported vGPU host
   listen: reboot
-  become: true
   ansible.builtin.reboot:
-    msg: "Rebooting to apply ansible changes"
+    msg: Rebooting to apply approved self-supported vGPU changes
     connect_timeout: 5
     pre_reboot_delay: 0
     post_reboot_delay: 10
+  when: nvidia_vgpu_reboot | bool

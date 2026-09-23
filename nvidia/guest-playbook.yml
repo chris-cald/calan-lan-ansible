@@ -15,8 +15,5 @@
         apply:
           tags: guest
   handlers:
-    - name: Import NVENC unlock patch
-      listen: nvidia-driver-installed
-      ansible.builtin.include_tasks: tasks/nvidia_enc_unlock_patch.yml
     - name: Import NVIDIA driver handlers
       ansible.builtin.import_tasks: handlers/nvidia_driver_handlers.yml
