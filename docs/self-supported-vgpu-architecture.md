@@ -8,7 +8,7 @@ and credentials stay in protected operator inputs.
 
 | Layer | Owner | Responsibility |
 | --- | --- | --- |
-| Proxmox host | Guarded Ansible | IOMMU, VFIO, prepatched Manager, unlock library, systemd overrides, and mediated-device discovery. |
+| Proxmox host | Guarded Ansible | `proxmox_vgpu_host` bootstraps IOMMU, VFIO, prepatched Manager, and unlock overrides; `proxmox_vgpu_mdev` creates one validated mediated device after reboot. |
 | VM lifecycle | OpenTofu | Disposable VM, snapshot lifecycle, and mediated-device attachment after host discovery passes. |
 | Talos guest | Image/system-extension build | Pinned guest driver and, if selected, the NVENC patch. Talos is not SSH-managed. |
 | Kubernetes workloads | Flux | NVIDIA device plugin, optional monitoring, and constrained GPU test workload. |
@@ -18,11 +18,12 @@ and credentials stay in protected operator inputs.
 
 1. Validate the protected compatibility manifest with
    `tests/validate_vgpu_compatibility_manifest.py`.
-2. Run Ansible host discovery. Mutation remains disabled unless the caller sets
-   `nvidia_vgpu_apply=true`, `nvidia_vgpu_reboot=true`, and the typed
-   confirmation. The Manager and unlock library are prebuilt artifacts verified
-   by SHA-256; the host never clones or builds third-party sources.
-3. After `mdevctl types` exposes the intended profile, OpenTofu attaches that
+2. Run `playbooks/proxmox-vgpu.yml` with a caller-owned inventory. Mutation
+   remains disabled unless both roles receive their typed confirmations. The
+   Manager and unlock library are prebuilt artifacts verified by SHA-256; the
+   host never clones or builds third-party sources.
+3. After the host role reboots and `mdevctl types` exposes the intended profile,
+   run the mdev role, then let OpenTofu attach that UUID to the disposable VM.
    profile to a disposable VM. Record the VM and snapshot outside Git.
 4. Build a Talos extension from the manifest's pinned guest-driver artifact.
    If `nvenc_patch_enabled` is true, apply the reviewed patch during the build,

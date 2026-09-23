@@ -1,0 +1,14 @@
+---
+proxmox_vgpu_host_apply: false
+proxmox_vgpu_host_reboot: false
+proxmox_vgpu_host_confirmation: ""
+proxmox_vgpu_host_confirmation_value: apply-proxmox-vgpu-host
+proxmox_vgpu_host_manager_path: ""
+proxmox_vgpu_host_manager_sha256: ""
+proxmox_vgpu_host_unlock_path: ""
+proxmox_vgpu_host_unlock_sha256: ""
+proxmox_vgpu_host_packages:
+  - build-essential
+  - dkms
+  - mdevctl
+  - "pve-headers-{{ ansible_kernel }}"
