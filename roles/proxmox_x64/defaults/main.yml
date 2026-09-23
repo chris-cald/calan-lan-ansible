@@ -1,0 +1,18 @@
+---
+proxmox_x64_apply: false
+proxmox_x64_confirm: ""
+proxmox_x64_confirmation: provision-proxmox-x64
+proxmox_x64_manage_network: false
+proxmox_x64_interface: eth0
+proxmox_x64_node_address: ""
+proxmox_x64_node_prefix: 24
+proxmox_x64_gateway: ""
+proxmox_x64_node_hostname: "{{ inventory_hostname_short }}"
+proxmox_x64_cluster_mode: single
+proxmox_x64_cluster_name: ""
+proxmox_x64_cluster_link0_address: ""
+proxmox_x64_cluster_join_address: ""
+proxmox_x64_cluster_join_fingerprint: ""
+proxmox_x64_cluster_join_password: ""
+proxmox_x64_cluster_join_data_loss_acknowledgement: ""
+proxmox_x64_cluster_join_data_loss_confirmation: join-will-overwrite-etc-pve

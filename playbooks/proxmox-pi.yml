@@ -1,0 +1,7 @@
+---
+- name: Provision a guarded Raspberry Pi Proxmox node
+  hosts: proxmox_pi
+  become: true
+  gather_facts: true
+  roles:
+    - role: proxmox_pi

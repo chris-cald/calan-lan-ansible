@@ -1,0 +1,7 @@
+---
+- name: Provision a guarded upstream-supported ARM Proxmox node
+  hosts: proxmox_arm64
+  become: true
+  gather_facts: true
+  roles:
+    - role: proxmox_arm64

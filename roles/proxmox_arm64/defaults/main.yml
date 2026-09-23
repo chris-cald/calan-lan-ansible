@@ -1,0 +1,22 @@
+---
+proxmox_arm64_apply: false
+proxmox_arm64_confirm: ""
+proxmox_arm64_confirmation: provision-proxmox-arm64
+proxmox_arm64_supported_platform: ""
+proxmox_arm64_supported_platforms:
+  - nvidia-grace-hopper
+  - nvidia-vera
+proxmox_arm64_manage_network: false
+proxmox_arm64_interface: eth0
+proxmox_arm64_node_address: ""
+proxmox_arm64_node_prefix: 24
+proxmox_arm64_gateway: ""
+proxmox_arm64_node_hostname: "{{ inventory_hostname_short }}"
+proxmox_arm64_cluster_mode: single
+proxmox_arm64_cluster_name: ""
+proxmox_arm64_cluster_link0_address: ""
+proxmox_arm64_cluster_join_address: ""
+proxmox_arm64_cluster_join_fingerprint: ""
+proxmox_arm64_cluster_join_password: ""
+proxmox_arm64_cluster_join_data_loss_acknowledgement: ""
+proxmox_arm64_cluster_join_data_loss_confirmation: join-will-overwrite-etc-pve
