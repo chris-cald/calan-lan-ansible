@@ -17,7 +17,7 @@ def test_host_role_is_default_disabled_and_requires_verified_artifacts() -> None
     assert "proxmox_vgpu_host_apply: false" in defaults
     assert "proxmox_vgpu_host_confirmation" in guard
     assert "proxmox_vgpu_host_manager_sha256" in guard
-    assert "proxmox_vgpu_host_unlock_sha256" in guard
+    assert "proxmox_vgpu_host_unlock_sha256" not in guard
     assert "ansible.builtin.apt" in tasks
     assert "ansible.builtin.stat" in tasks
     assert "ansible.builtin.git" not in tasks
@@ -41,6 +41,7 @@ def test_playbook_requires_a_protected_inventory_and_typed_confirmation() -> Non
     assert "proxmox_vgpu_inventory" in playbook
     assert "ansible_inventory_sources" in playbook
     assert "proxmox_vgpu_host" in playbook
+    assert "proxmox_vgpu_unlock" in playbook
     assert "proxmox_vgpu_mdev" in playbook
 
 

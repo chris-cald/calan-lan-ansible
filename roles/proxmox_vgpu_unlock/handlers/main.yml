@@ -1,0 +1,9 @@
+---
+- name: Reload systemd for vGPU unlock
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Reboot Proxmox vGPU unlock host
+  ansible.builtin.reboot:
+    msg: Rebooting after guarded vGPU unlock DKMS changes
+    reboot_timeout: 900

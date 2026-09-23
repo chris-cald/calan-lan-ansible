@@ -1,0 +1,17 @@
+---
+- name: Require explicit vGPU unlock approval
+  when: proxmox_vgpu_unlock_apply | bool
+  ansible.builtin.assert:
+    that:
+      - proxmox_vgpu_unlock_confirmation == proxmox_vgpu_unlock_confirmation_value
+      - proxmox_vgpu_unlock_reboot | bool
+      - proxmox_vgpu_unlock_source_revision == 'f432ffc8b7ed245df8858e9b38000d3b8f0352f4'
+      - proxmox_vgpu_unlock_source_sha256 == '07f2f6d847867b7994b465d245176aee2bb649dcbb92badf65372be0cc22aaaf'
+      - proxmox_vgpu_unlock_source_url == 'https://github.com/DualCoder/vgpu_unlock/archive/f432ffc8b7ed245df8858e9b38000d3b8f0352f4.tar.gz'
+      - proxmox_vgpu_unlock_builder_directory is match('^/')
+      - proxmox_vgpu_unlock_platform == 'linux/amd64'
+      - proxmox_vgpu_unlock_dkms_version is match('^[0-9]+\.[0-9]+\.[0-9]+$')
+    fail_msg: >-
+      vGPU unlock provisioning requires an approved reboot, typed confirmation,
+      pinned source archive, absolute controller build directory, and NVIDIA
+      DKMS version.

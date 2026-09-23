@@ -1,8 +1,8 @@
 # Proxmox vGPU host
 
 Bootstraps a vanilla Proxmox host for the self-supported vGPU lab path:
-IOMMU, VFIO, prerequisites, a SHA-256-verified prepatched NVIDIA Manager, and
-SHA-256-verified unlock service overrides.
+IOMMU, VFIO, prerequisites, and a SHA-256-verified NVIDIA vGPU Manager.
+The separate `proxmox_vgpu_unlock` role applies the pinned unlock workflow.
 
 It discovers PCI devices by default. Mutation requires protected artifact paths
 and these inputs:
