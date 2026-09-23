@@ -1,0 +1,12 @@
+---
+- name: Require explicit mediated-device approval
+  when: proxmox_vgpu_mdev_apply | bool
+  ansible.builtin.assert:
+    that:
+      - proxmox_vgpu_mdev_confirmation == proxmox_vgpu_mdev_confirmation_value
+      - proxmox_vgpu_mdev_parent is match('^[0-9a-fA-F:.]+$')
+      - proxmox_vgpu_mdev_type | length > 0
+      - proxmox_vgpu_mdev_uuid is match('^[0-9a-fA-F-]{36}$')
+    fail_msg: >-
+      Mediated-device creation requires a typed confirmation, PCI parent,
+      supported mdev type, and UUID from protected operator inputs.
