@@ -14,6 +14,41 @@
       "command": "ANSIBLE_ROLES_PATH=$PWD/roles ansible-playbook -i 'localhost,' --syntax-check roles/sudo/tests/test.yml"
     },
     {
+      "pattern": "roles/proxmox_ve/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/proxmox_pi/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/proxmox_x64/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/proxmox_arm64/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-pi.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-x64.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-arm64.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
       "pattern": "playbooks/awx/*.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
