@@ -1,0 +1,44 @@
+---
+- name: Verify the upstream-supported ARM platform boundary
+  when: proxmox_arm64_apply | bool
+  block:
+    - name: Check for UEFI and ACPI firmware interfaces
+      ansible.builtin.stat:
+        path: '{{ item }}'
+      loop:
+        - /sys/firmware/efi
+        - /sys/firmware/acpi
+      register: proxmox_arm64_firmware_paths
+
+    - name: Validate the supported ARM platform declaration
+      ansible.builtin.assert:
+        that:
+          - proxmox_arm64_supported_platform in proxmox_arm64_supported_platforms
+          - ansible_architecture in ['aarch64', 'arm64']
+          - proxmox_arm64_firmware_paths.results | map(attribute='stat.exists') | min
+        fail_msg: >-
+          Proxmox VE ARM support requires a declared NVIDIA Grace Hopper or Vera
+          platform booted through UEFI with ACPI hardware description.
+
+- name: Compose the common Proxmox VE workflow for supported ARM
+  ansible.builtin.include_role:
+    name: proxmox_ve
+  vars:
+    proxmox_ve_apply: '{{ proxmox_arm64_apply }}'
+    proxmox_ve_confirm: '{{ proxmox_arm64_confirm }}'
+    proxmox_ve_confirmation: '{{ proxmox_arm64_confirmation }}'
+    proxmox_ve_supported_architectures: [aarch64, arm64]
+    proxmox_ve_manage_network: '{{ proxmox_arm64_manage_network }}'
+    proxmox_ve_interface: '{{ proxmox_arm64_interface }}'
+    proxmox_ve_node_address: '{{ proxmox_arm64_node_address }}'
+    proxmox_ve_node_prefix: '{{ proxmox_arm64_node_prefix }}'
+    proxmox_ve_gateway: '{{ proxmox_arm64_gateway }}'
+    proxmox_ve_node_hostname: '{{ proxmox_arm64_node_hostname }}'
+    proxmox_ve_cluster_mode: '{{ proxmox_arm64_cluster_mode }}'
+    proxmox_ve_cluster_name: '{{ proxmox_arm64_cluster_name }}'
+    proxmox_ve_cluster_link0_address: '{{ proxmox_arm64_cluster_link0_address }}'
+    proxmox_ve_cluster_join_address: '{{ proxmox_arm64_cluster_join_address }}'
+    proxmox_ve_cluster_join_fingerprint: '{{ proxmox_arm64_cluster_join_fingerprint }}'
+    proxmox_ve_cluster_join_password: '{{ proxmox_arm64_cluster_join_password }}'
+    proxmox_ve_cluster_join_data_loss_acknowledgement: '{{ proxmox_arm64_cluster_join_data_loss_acknowledgement }}'
+    proxmox_ve_cluster_join_data_loss_confirmation: '{{ proxmox_arm64_cluster_join_data_loss_confirmation }}'

@@ -1,0 +1,23 @@
+---
+- name: Compose the common Proxmox VE workflow for x64
+  ansible.builtin.include_role:
+    name: proxmox_ve
+  vars:
+    proxmox_ve_apply: '{{ proxmox_x64_apply }}'
+    proxmox_ve_confirm: '{{ proxmox_x64_confirm }}'
+    proxmox_ve_confirmation: '{{ proxmox_x64_confirmation }}'
+    proxmox_ve_supported_architectures: [x86_64, amd64]
+    proxmox_ve_manage_network: '{{ proxmox_x64_manage_network }}'
+    proxmox_ve_interface: '{{ proxmox_x64_interface }}'
+    proxmox_ve_node_address: '{{ proxmox_x64_node_address }}'
+    proxmox_ve_node_prefix: '{{ proxmox_x64_node_prefix }}'
+    proxmox_ve_gateway: '{{ proxmox_x64_gateway }}'
+    proxmox_ve_node_hostname: '{{ proxmox_x64_node_hostname }}'
+    proxmox_ve_cluster_mode: '{{ proxmox_x64_cluster_mode }}'
+    proxmox_ve_cluster_name: '{{ proxmox_x64_cluster_name }}'
+    proxmox_ve_cluster_link0_address: '{{ proxmox_x64_cluster_link0_address }}'
+    proxmox_ve_cluster_join_address: '{{ proxmox_x64_cluster_join_address }}'
+    proxmox_ve_cluster_join_fingerprint: '{{ proxmox_x64_cluster_join_fingerprint }}'
+    proxmox_ve_cluster_join_password: '{{ proxmox_x64_cluster_join_password }}'
+    proxmox_ve_cluster_join_data_loss_acknowledgement: '{{ proxmox_x64_cluster_join_data_loss_acknowledgement }}'
+    proxmox_ve_cluster_join_data_loss_confirmation: '{{ proxmox_x64_cluster_join_data_loss_confirmation }}'
