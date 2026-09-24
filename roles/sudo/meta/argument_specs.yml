@@ -28,6 +28,15 @@ argument_specs:
         default: true
         description: Should the user be required to enter a password for privileged access? Defaults to true.
 
+      passwordless_commands:
+        type: "list"
+        elements: "str"
+        required: false
+        default: []
+        description: >-
+          Commands allowed without a password when password_required is false.
+          An empty list preserves the legacy NOPASSWD:ALL behavior.
+
   # roles/privileged/tasks/deprivilege.yml entry point
   alternate:
     short_description: Removes privileged access for the specified user.
