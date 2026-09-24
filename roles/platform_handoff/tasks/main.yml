@@ -1,0 +1,35 @@
+---
+- name: Create protected platform state directory
+  ansible.builtin.file:
+    path: "{{ platform_orchestration_state_directory }}"
+    state: directory
+    mode: "0700"
+
+- name: Persist platform discovery state
+  ansible.builtin.copy:
+    dest: "{{ platform_orchestration_checkpoint_path }}"
+    mode: "0600"
+    content: |
+      {
+        "schema_version": 1,
+        "mode": {{ platform_orchestration_mode | to_nice_json }},
+        "requested_roles": {{ platform_orchestration_requested_roles | to_nice_json }},
+        "hosts": {
+      {% for host in groups['all'] | sort %}
+          {{ host | to_nice_json }}:
+            {{ hostvars[host].platform_discovery_result
+               | default({'discovery': 'not-run'}) | to_nice_json }}{{ ',' if not loop.last else '' }}
+      {% endfor %}
+        }
+      }
+
+- name: Print OpenTofu and Flux handoff commands
+  when:
+    - talos_handoff_apply | bool
+    - talos_handoff_opentofu_root | length > 0
+    - talos_handoff_tfvars_path | length > 0
+  ansible.builtin.debug:
+    msg:
+      - "tofu -chdir={{ talos_handoff_opentofu_root | quote }} init -lockfile=readonly"
+      - "tofu -chdir={{ talos_handoff_opentofu_root | quote }} plan -var-file={{ talos_handoff_tfvars_path | quote }}"
+      - "flux reconcile kustomization {{ talos_handoff_flux_kustomization | default('infrastructure') | quote }} --with-source"

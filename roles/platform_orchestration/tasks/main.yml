@@ -1,0 +1,73 @@
+---
+- name: Require one caller-owned protected inventory
+  ansible.builtin.assert:
+    that:
+      - platform_orchestration_inventory is match('^/')
+      - ansible_inventory_sources | length == 1
+      - ansible_inventory_sources | first == platform_orchestration_inventory
+      - platform_orchestration_inventory is not match('^' ~ playbook_dir ~ '/')
+    fail_msg: >-
+      Pass exactly one absolute inventory outside this checkout and set
+      platform_orchestration_inventory to that same path.
+  delegate_to: localhost
+  run_once: true
+
+- name: Validate platform orchestration mode
+  ansible.builtin.assert:
+    that:
+      - platform_orchestration_mode in ['discover', 'apply', 'rollback']
+      - platform_orchestration_mode != 'apply' or platform_orchestration_confirmation == platform_orchestration_confirmation_value
+      - platform_orchestration_state_directory is match('^/')
+      - platform_orchestration_state_directory is not match('^' ~ playbook_dir ~ '/')
+      - platform_orchestration_checkpoint_path is match('^/')
+      - platform_orchestration_checkpoint_path is not match('^' ~ playbook_dir ~ '/')
+      - platform_orchestration_talos_handoff_path is match('^/')
+      - platform_orchestration_talos_handoff_path is not match('^' ~ playbook_dir ~ '/')
+      - >-
+        platform_orchestration_requested_roles | difference([
+        'proxmox_pi', 'proxmox_x64', 'proxmox_arm64', 'proxmox_existing',
+        'proxmox_vgpu_host', 'proxmox_vgpu_mdev', 'talos_handoff']) | length == 0
+    fail_msg: >-
+      Use discovery by default. Apply requires the typed
+      apply-selected-platform-roles confirmation and selected known roles.
+      State and handoff paths must remain outside the checkout.
+  delegate_to: localhost
+  run_once: true
+
+- name: Verify caller-owned rollback checkpoint
+  when: platform_orchestration_mode in ['apply', 'rollback']
+  ansible.builtin.stat:
+    path: "{{ platform_orchestration_checkpoint_path }}"
+  register: platform_orchestration_checkpoint
+  delegate_to: localhost
+  run_once: true
+
+- name: Require caller-owned rollback checkpoint
+  when: platform_orchestration_mode in ['apply', 'rollback']
+  ansible.builtin.assert:
+    that: platform_orchestration_checkpoint.stat.exists
+    fail_msg: >-
+      Refusing to proceed without the protected discovery checkpoint. Run
+      discovery first and keep its generated state outside the checkout.
+  delegate_to: localhost
+  run_once: true
+
+- name: Record orchestration handoff state
+  ansible.builtin.set_stats:
+    data:
+      platform_orchestration_handoff:
+        mode: "{{ platform_orchestration_mode }}"
+        checkpoint_path: "{{ platform_orchestration_checkpoint_path }}"
+        talos_handoff_path: "{{ platform_orchestration_talos_handoff_path }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Explain fail-closed rollback boundary
+  when: platform_orchestration_mode == 'rollback'
+  ansible.builtin.debug:
+    msg: >-
+      Automatic rollback is intentionally unavailable for Proxmox installation
+      and cluster membership. Restore the protected checkpoint manually;
+      this run makes no host, cluster, VM, Talos, or Flux changes.
+  delegate_to: localhost
+  run_once: true

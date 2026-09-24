@@ -136,6 +136,8 @@
       when:
         - proxmox_ve_cluster_mode == 'create'
         - not proxmox_ve_corosync_conf.stat.exists
+      register: proxmox_ve_cluster_create
+      changed_when: proxmox_ve_cluster_create.rc == 0
 
     - name: Join the existing shared Proxmox control plane
       ansible.builtin.expect:

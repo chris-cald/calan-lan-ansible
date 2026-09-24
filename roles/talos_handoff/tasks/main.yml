@@ -1,0 +1,24 @@
+---
+- name: Validate OpenTofu Talos handoff
+  when: talos_handoff_apply | bool
+  ansible.builtin.assert:
+    that:
+      - talos_handoff_path is match('^/')
+      - talos_handoff_opentofu_root is match('^/')
+      - talos_handoff_tfvars_path is match('^/')
+    fail_msg: >-
+      Talos lifecycle belongs to a caller-owned OpenTofu root. Supply absolute
+      protected handoff, root, and tfvars paths outside this checkout.
+
+- name: Record the handoff to OpenTofu Talos provisioning
+  when: talos_handoff_apply | bool
+  ansible.builtin.copy:
+    dest: "{{ talos_handoff_path }}"
+    mode: "0600"
+    content: |
+      schema_version: 1
+      stage: proxmox-ready-for-opentofu
+      checkpoint_path: {{ platform_orchestration_checkpoint_path | to_json }}
+      opentofu_root: {{ talos_handoff_opentofu_root | to_json }}
+      tfvars_path: {{ talos_handoff_tfvars_path | to_json }}
+      next_owner: opentofu

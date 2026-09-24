@@ -1,0 +1,9 @@
+---
+platform_orchestration_mode: discover
+platform_orchestration_confirmation: ""
+platform_orchestration_confirmation_value: apply-selected-platform-roles
+platform_orchestration_inventory: ""
+platform_orchestration_state_directory: "{{ lookup('env', 'HOME') }}/.local/state/calan-platform"
+platform_orchestration_checkpoint_path: "{{ platform_orchestration_state_directory }}/platform-discovery.json"
+platform_orchestration_talos_handoff_path: "{{ platform_orchestration_state_directory }}/talos-handoff.yml"
+platform_orchestration_requested_roles: []

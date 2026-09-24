@@ -23,6 +23,7 @@ the common role.
 proxmox_pi_apply: true
 proxmox_pi_confirm: provision-proxmox-pi
 proxmox_pi_unsupported_hardware_acknowledgement: accept-unsupported-raspberry-pi-pve
+proxmox_pi_mixed_architecture_cluster_acknowledgement: accept-mixed-architecture-proxmox-cluster # required for create or join
 proxmox_pi_node_address: 192.0.2.10
 proxmox_pi_node_hostname: pve-pi-01
 proxmox_pi_cluster_mode: single # or create, join
@@ -32,7 +33,8 @@ All topology is caller-supplied. Set `proxmox_pi_manage_network: true` with the
 interface, prefix, and gateway to stage `vmbr0` for a separately planned,
 console-tested activation. `create` needs `proxmox_pi_cluster_name`; `join`
 needs the existing node IP, SHA-256 API certificate fingerprint, protected
-password, and the explicit `/etc/pve` data-loss acknowledgement.
+password, the explicit `/etc/pve` data-loss acknowledgement, and the
+mixed-architecture acknowledgement.
 
 Validate with:
 
