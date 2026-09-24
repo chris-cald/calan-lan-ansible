@@ -31,6 +31,17 @@ and credentials stay in protected operator inputs.
 5. Boot the disposable Talos VM and use Flux to reconcile only the NVIDIA
    device plugin and a constrained test workload.
 
+## Test-only stack artifacts
+
+- `tofu/vgpu-test` creates one cloned VM with an externally created mdev. It is
+  disabled until protected variables and `apply-disposable-vgpu-test` are
+  supplied.
+- `talos/vgpu-extension` defines the protected-builder contract for the
+  immutable guest-driver and optional NVENC patch.
+- `kubernetes/clusters/talos/tests/vgpu` contains a node-label-scoped device
+  plugin and GPU smoke Job. It is deliberately absent from the default Flux
+  infrastructure entrypoint; reconcile it only after the prior checkpoints.
+
 ## Bespoke Linux VM option
 
 `nvidia/guest-playbook.yml` is for a non-Talos disposable Linux VM. It is

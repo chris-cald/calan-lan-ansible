@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gpu-smoke
+  namespace: vgpu-test
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      nodeSelector:
+        vgpu.calan.lan/test: "true"
+      restartPolicy: Never
+      containers:
+        - name: gpu-smoke
+          image: nvidia/cuda:12.6.3-base-ubuntu24.04
+          command: ["nvidia-smi", "--query-gpu=name,driver_version", "--format=csv,noheader"]
+          resources:
+            limits:
+              nvidia.com/gpu: 1
