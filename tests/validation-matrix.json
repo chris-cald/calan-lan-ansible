@@ -166,6 +166,16 @@
       "pattern": "playbooks/proxmox-no-nag.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/safe_sudo/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/safe-sudo.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
     }
   ]
 }

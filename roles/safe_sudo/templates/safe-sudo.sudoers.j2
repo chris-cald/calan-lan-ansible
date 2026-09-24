@@ -1,0 +1,4 @@
+# Managed by Ansible. Validate with: visudo -cf /etc/sudoers.d/safe-sudo
+Cmnd_Alias SAFE_SUDO = {{ safe_sudo_dispatcher_path }}
+
+%{{ safe_sudo_group }} ALL=(root) NOPASSWD: SAFE_SUDO

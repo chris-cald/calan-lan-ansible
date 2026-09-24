@@ -1,0 +1,44 @@
+---
+- name: Validate safe-sudo inputs
+  ansible.builtin.assert:
+    that:
+      - safe_sudo_group | length > 0
+      - safe_sudo_users | length > 0
+      - safe_sudo_dispatcher_path is match('^/')
+      - safe_sudo_sudoers_path is match('^/etc/sudoers\.d/')
+    fail_msg: >-
+      safe-sudo requires a group, at least one user, an absolute dispatcher path,
+      and a sudoers.d destination.
+  when: safe_sudo_enabled | bool
+
+- name: Install safe-sudo
+  when: safe_sudo_enabled | bool
+  block:
+    - name: Create safe-sudo operator group
+      ansible.builtin.group:
+        name: "{{ safe_sudo_group }}"
+        state: present
+
+    - name: Add operators to safe-sudo group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: "{{ safe_sudo_group }}"
+        append: true
+      loop: "{{ safe_sudo_users }}"
+
+    - name: Install safe-sudo dispatcher
+      ansible.builtin.copy:
+        src: safe-sudo
+        dest: "{{ safe_sudo_dispatcher_path }}"
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Install safe-sudo sudoers policy
+      ansible.builtin.template:
+        src: safe-sudo.sudoers.j2
+        dest: "{{ safe_sudo_sudoers_path }}"
+        owner: root
+        group: root
+        mode: '0440'
+        validate: /usr/sbin/visudo -cf %s

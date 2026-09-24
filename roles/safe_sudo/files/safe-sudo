@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+# /usr/local/sbin/safe-sudo
+# Consolidated passwordless-sudo dispatcher.
+#
+# This is intended to be reusable across deployments. It exposes a small set of
+# named operational capabilities while keeping sudoers pointed at one fixed,
+# root-owned executable. Add new privileged capabilities as explicit subcommands;
+# avoid pass-through access to broad administrative tools.
+
+set -euo pipefail
+
+die() {
+  printf 'safe-sudo: %s\n' "$*" >&2
+  exit 1
+}
+
+need_absolute_path() {
+  [[ "${1:-}" == /* ]] || die "expected absolute path, got: ${1:-<empty>}"
+}
+
+first_executable() {
+  local path
+  for path in "$@"; do
+    [[ -x "$path" ]] && {
+      printf '%s\n' "$path"
+      return 0
+    }
+  done
+  return 1
+}
+
+cmd="${1:-}"
+[[ -n "$cmd" ]] || die "usage: safe-sudo <subcommand> [args...]"
+shift
+
+case "$cmd" in
+  journalctl)
+    JOURNALCTL="$(first_executable /usr/bin/journalctl /bin/journalctl)" || die "journalctl not found"
+    exec "$JOURNALCTL" --no-pager "$@"
+    ;;
+
+  systemctl-status)
+    SYSTEMCTL="$(first_executable /usr/bin/systemctl /bin/systemctl)" || die "systemctl not found"
+    exec "$SYSTEMCTL" --no-pager status "$@"
+    ;;
+
+  systemctl-restart-nginx)
+    SYSTEMCTL="$(first_executable /usr/bin/systemctl /bin/systemctl)" || die "systemctl not found"
+    [[ "$#" -eq 0 ]] || die "systemctl-restart-nginx accepts no arguments"
+    exec "$SYSTEMCTL" restart nginx
+    ;;
+
+  apt-update)
+    APT_GET="$(first_executable /usr/bin/apt-get /bin/apt-get)" || die "apt-get not found"
+    [[ "$#" -eq 0 ]] || die "apt-update accepts no arguments"
+    exec "$APT_GET" update
+    ;;
+
+  dmidecode)
+    DMIDECODE="$(first_executable /usr/sbin/dmidecode /usr/bin/dmidecode)" || die "dmidecode not found"
+    for arg in "$@"; do
+      case "$arg" in
+        --dump-bin|--dump-bin=*|--from-dump|--from-dump=*)
+          die "dmidecode dump/from-dump options are not allowed"
+          ;;
+      esac
+    done
+    exec "$DMIDECODE" "$@"
+    ;;
+
+  smartctl)
+    SMARTCTL="$(first_executable /usr/sbin/smartctl /usr/bin/smartctl)" || die "smartctl not found"
+    if [[ "$#" -eq 1 && ( "$1" == "--scan" || "$1" == "--scan-open" ) ]]; then
+      exec "$SMARTCTL" "$@"
+    fi
+
+    args=()
+    while [[ "$#" -gt 0 ]]; do
+      case "$1" in
+        -i|-H|-A|-a|-x|-j|-V)
+          args+=("$1")
+          shift
+          ;;
+        -d|-l|-n|-r)
+          [[ "$#" -ge 2 ]] || die "$1 requires a value"
+          args+=("$1" "$2")
+          shift 2
+          ;;
+        --info|--health|--attributes|--all|--xall|--json|--version)
+          args+=("$1")
+          shift
+          ;;
+        --device|--log|--nocheck|--report)
+          [[ "$#" -ge 2 ]] || die "$1 requires a value"
+          args+=("$1" "$2")
+          shift 2
+          ;;
+        --device=*|--log=*|--nocheck=*|--report=*)
+          args+=("$1")
+          shift
+          ;;
+        -s|-t|-X|--smart=*|--smart|--test=*|--test|--abort|--offlineauto|--offlineauto=*|--saveauto|--saveauto=*)
+          die "smartctl option is not read-only: $1"
+          ;;
+        -*)
+          die "smartctl option is not whitelisted: $1"
+          ;;
+        *)
+          need_absolute_path "$1"
+          args+=("$1")
+          shift
+          ;;
+      esac
+    done
+    exec "$SMARTCTL" "${args[@]}"
+    ;;
+
+  ipmitool)
+    sub="${1:-}"
+    sub2="${2:-}"
+    [[ -n "$sub" ]] || die "ipmitool requires a read-only subcommand"
+    IPMITOOL="$(first_executable /usr/sbin/ipmitool /usr/bin/ipmitool)" || true
+    [[ -n "${IPMITOOL:-}" ]] || die "ipmitool not found"
+
+    case "$sub:$sub2" in
+      chassis:status|chassis:restart_cause|chassis:poh|mc:info|mc:guid|mc:getenables|\
+      sdr:list|sdr:elist|sdr:print|sensor:list|sensor:get|fru:list|fru:print|\
+      sel:list|sel:elist|sel:info|sel:get|lan:print|user:list|channel:info|channel:authcap|\
+      session:info|dcmi:power_reading|dcmi:power_consumption|dcmi:power_limit|\
+      dcmi:power_throttle|dcmi:power_monitor|dcmi:temp_reading|dcmi:capability)
+        exec "$IPMITOOL" "$@"
+        ;;
+      *)
+        die "ipmitool command is not whitelisted: $sub ${sub2:-}"
+        ;;
+    esac
+    ;;
+
+  ethtool)
+    ETHTOOL="$(first_executable /usr/sbin/ethtool /usr/bin/ethtool)" || die "ethtool not found"
+    [[ "$#" -ge 1 ]] || die "ethtool requires arguments"
+    case "$1" in
+      -i|-m|-S|-k|-g|-c|-a|-P|--driver|--module-info|--statistics|--show-features|--show-ring|--show-coalesce|--show-pause|--show-permaddr)
+        exec "$ETHTOOL" "$@"
+        ;;
+      -*)
+        die "ethtool option is not whitelisted: $1"
+        ;;
+      *)
+        [[ "$#" -eq 1 ]] || die "plain ethtool status accepts exactly one interface"
+        exec "$ETHTOOL" "$1"
+        ;;
+    esac
+    ;;
+
+  pvesh-get)
+    PVESH="$(first_executable /usr/bin/pvesh /usr/sbin/pvesh)" || die "pvesh not found"
+    [[ "$#" -eq 1 ]] || die "pvesh-get accepts exactly one endpoint"
+    endpoint="$1"
+    case "$endpoint" in
+      /version|/nodes|/storage|/cluster/status|/cluster/resources)
+        ;;
+      /nodes/*/status)
+        [[ "$endpoint" =~ ^/nodes/[A-Za-z0-9._-]+/status$ ]] || die "pvesh endpoint is not whitelisted: $endpoint"
+        ;;
+      *)
+        die "pvesh endpoint is not whitelisted: $endpoint"
+        ;;
+    esac
+    exec "$PVESH" get "$endpoint"
+    ;;
+
+  lspci)
+    LSPCI="$(first_executable /usr/bin/lspci /usr/sbin/lspci)" || die "lspci not found"
+    args=("$@")
+    idx=0
+    while [[ "$idx" -lt "${#args[@]}" ]]; do
+      arg="${args[$idx]}"
+      case "$arg" in
+        -s|-d)
+          [[ "$((idx + 1))" -lt "${#args[@]}" ]] || die "$arg requires a value"
+          idx=$((idx + 2))
+          ;;
+        -*)
+          die "lspci option is not whitelisted: $arg"
+          ;;
+        *)
+          die "lspci positional argument is not allowed: $arg"
+          ;;
+      esac
+    done
+    exec "$LSPCI" -vv "${args[@]}"
+    ;;
+
+  *)
+    die "unknown subcommand: $cmd"
+    ;;
+esac

@@ -1,0 +1,7 @@
+---
+# Disabled until a guarded playbook explicitly enables this role.
+safe_sudo_enabled: false
+safe_sudo_group: ops
+safe_sudo_users: []
+safe_sudo_dispatcher_path: /usr/local/sbin/safe-sudo
+safe_sudo_sudoers_path: /etc/sudoers.d/safe-sudo
