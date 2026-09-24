@@ -176,6 +176,16 @@
       "pattern": "playbooks/safe-sudo.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/ssh_safe_reader/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/ssh-safe-reader.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
     }
   ]
 }
