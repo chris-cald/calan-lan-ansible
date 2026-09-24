@@ -1,0 +1,17 @@
+---
+- name: Install verified NVENC session-limit patch artifact
+  ansible.builtin.copy:
+    src: "{{ nvidia_guest_nvenc_patch_path }}"
+    dest: /opt/nvidia-nvenc-patch.sh
+    mode: "0755"
+    checksum: "{{ nvidia_guest_nvenc_patch_sha256 }}"
+
+- name: Apply verified NVENC session-limit patch
+  ansible.builtin.command:
+    argv:
+      - /bin/sh
+      - /opt/nvidia-nvenc-patch.sh
+      - -s
+  register: nvidia_guest_nvenc_patch
+  changed_when: nvidia_guest_nvenc_patch.stdout == "Patched!"
+  notify: reboot-guest

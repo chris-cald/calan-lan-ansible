@@ -11,6 +11,9 @@ ansible-playbook \
 ```
 
 The standalone entrypoint rejects an omitted, repository-local, or different
-inventory path before importing any utility tasks.
+inventory path before importing any utility tasks. It ensures the QEMU guest
+agent is installed from the distribution's configured repository but never
+upgrades it to the latest available version; use the separate guarded Proxmox
+maintenance workflow for package upgrades.
 
 Do not add topology, credentials, or controller state to this directory.

@@ -1,0 +1,14 @@
+---
+- name: Require explicit self-supported vGPU approval
+  when: nvidia_vgpu_apply | bool
+  ansible.builtin.assert:
+    that:
+      - nvidia_vgpu_confirmation == nvidia_vgpu_confirmation_value
+      - nvidia_vgpu_reboot | bool
+      - nvidia_vgpu_driver_path | length > 0
+      - nvidia_vgpu_driver_sha256 is match('^[a-fA-F0-9]{64}$')
+      - nvidia_vgpu_unlock_path | length > 0
+      - nvidia_vgpu_unlock_sha256 is match('^[a-fA-F0-9]{64}$')
+    fail_msg: >-
+      Self-supported vGPU mutation requires a typed confirmation, approved reboot,
+      and caller-supplied SHA-256-verified Manager and unlock artifacts.
