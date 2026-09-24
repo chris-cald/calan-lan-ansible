@@ -1,0 +1,11 @@
+---
+# Persistent, non-privileged SSH access. Targets are always selected by inventory/--limit.
+ssh_safe_reader_enabled: false
+ssh_safe_reader_state: present
+ssh_safe_reader_login_user: "{{ ansible_user | default(lookup('env', 'USER'), true) }}"
+ssh_safe_reader_algorithm: ed25519
+ssh_safe_reader_key_path: ""
+ssh_safe_reader_create_key: false
+ssh_safe_reader_key_passphrase: ""
+ssh_safe_reader_authorized_keys_path: ""
+ssh_safe_reader_key_options: no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-user-rc

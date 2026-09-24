@@ -1,0 +1,19 @@
+---
+- name: Require an explicit safe-reader target selection
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Refuse an unspecified target group
+      ansible.builtin.assert:
+        that:
+          - ssh_safe_reader_targets is defined
+          - ssh_safe_reader_targets | length > 0
+        fail_msg: Set ssh_safe_reader_targets to an inventory host or group.
+
+- name: Manage persistent non-privileged SSH safe-reader access
+  hosts: "{{ ssh_safe_reader_targets | default('ssh_safe_reader_no_targets') }}"
+  gather_facts: false
+  become: true
+  roles:
+    - role: ssh_safe_reader
