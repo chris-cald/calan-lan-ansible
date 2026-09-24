@@ -156,6 +156,16 @@
       "pattern": "proxmox-util/playbook.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/proxmox_no_nag/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-no-nag.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
     }
   ]
 }
