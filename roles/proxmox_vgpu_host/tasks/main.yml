@@ -1,0 +1,113 @@
+---
+- name: Validate Proxmox vGPU host inputs
+  ansible.builtin.import_tasks: guard.yml
+
+- name: Discover NVIDIA PCI devices
+  ansible.builtin.command:
+    argv: [lspci, -nn]
+  register: proxmox_vgpu_host_pci_devices
+  changed_when: false
+
+- name: Configure the Proxmox vGPU host
+  when: proxmox_vgpu_host_apply | bool
+  block:
+    - name: Determine IOMMU kernel parameter
+      ansible.builtin.set_fact:
+        proxmox_vgpu_host_iommu_parameter: >-
+          {{ 'intel_iommu=on' if 'GenuineIntel' in ansible_processor else 'amd_iommu=on' }}
+
+    - name: Validate IOMMU CPU support
+      ansible.builtin.assert:
+        that: "'GenuineIntel' in ansible_processor or 'AuthenticAMD' in ansible_processor"
+        fail_msg: Unable to determine an Intel or AMD IOMMU kernel parameter.
+
+    - name: Install Proxmox vGPU prerequisites
+      ansible.builtin.apt:
+        name: "{{ proxmox_vgpu_host_packages }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Detect systemd-boot kernel configuration
+      ansible.builtin.stat:
+        path: /etc/kernel/cmdline
+      register: proxmox_vgpu_host_kernel_cmdline
+
+    - name: Select boot configuration path
+      ansible.builtin.set_fact:
+        proxmox_vgpu_host_boot_path: >-
+          {{ '/etc/kernel/cmdline' if proxmox_vgpu_host_kernel_cmdline.stat.exists else '/etc/default/grub' }}
+        proxmox_vgpu_host_systemd_boot: "{{ proxmox_vgpu_host_kernel_cmdline.stat.exists }}"
+
+    - name: Enable IOMMU in systemd-boot configuration
+      when: proxmox_vgpu_host_systemd_boot | bool
+      ansible.builtin.replace:
+        path: "{{ proxmox_vgpu_host_boot_path }}"
+        regexp: '^(?!.*(?:intel|amd)_iommu=on)(.*)$'
+        replace: '\1 {{ proxmox_vgpu_host_iommu_parameter }} iommu=pt'
+      notify:
+        - refresh Proxmox boot configuration
+        - reboot Proxmox vGPU host
+
+    - name: Enable IOMMU in GRUB configuration
+      when: not proxmox_vgpu_host_systemd_boot | bool
+      ansible.builtin.replace:
+        path: "{{ proxmox_vgpu_host_boot_path }}"
+        regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT=")(?![^"]*(?:intel|amd)_iommu=on)([^"]*)"$'
+        replace: '\1\2 {{ proxmox_vgpu_host_iommu_parameter }} iommu=pt"'
+      notify:
+        - refresh Proxmox boot configuration
+        - reboot Proxmox vGPU host
+
+    - name: Configure VFIO modules
+      ansible.builtin.lineinfile:
+        path: /etc/modules
+        line: "{{ item }}"
+      loop:
+        - vfio
+        - vfio_iommu_type1
+        - vfio_pci
+        - vfio_virqfd
+      notify:
+        - update initramfs
+        - reboot Proxmox vGPU host
+
+    - name: Blacklist nouveau
+      ansible.builtin.copy:
+        dest: /etc/modprobe.d/blacklist-nouveau.conf
+        mode: "0644"
+        content: |
+          blacklist nouveau
+          options nouveau modeset=0
+      notify:
+        - update initramfs
+        - reboot Proxmox vGPU host
+
+    - name: Create vGPU artifact directory
+      ansible.builtin.file:
+        path: /opt/proxmox-vgpu
+        state: directory
+        mode: "0755"
+
+    - name: Create vGPU installation marker directory
+      ansible.builtin.file:
+        path: /var/lib/proxmox-vgpu-host
+        state: directory
+        mode: "0755"
+
+    - name: Install verified NVIDIA vGPU Manager artifact
+      ansible.builtin.copy:
+        src: "{{ proxmox_vgpu_host_manager_path }}"
+        dest: /opt/proxmox-vgpu/nvidia-vgpu-manager.run
+        mode: "0755"
+        checksum: "{{ proxmox_vgpu_host_manager_sha256 }}"
+
+    - name: Install NVIDIA vGPU Manager
+      ansible.builtin.command:
+        argv: [/opt/proxmox-vgpu/nvidia-vgpu-manager.run, --dkms, -m=kernel]
+        creates: "/var/lib/proxmox-vgpu-host/manager-{{ proxmox_vgpu_host_manager_sha256 }}"
+      register: proxmox_vgpu_host_manager_install
+      changed_when: proxmox_vgpu_host_manager_install.rc == 0
+      notify:
+        - record installed NVIDIA vGPU Manager artifact
+        - reboot Proxmox vGPU host

@@ -1,0 +1,62 @@
+---
+- name: Validate mediated-device inputs
+  ansible.builtin.import_tasks: guard.yml
+
+- name: Detect mdevctl availability
+  ansible.builtin.command:
+    argv: [mdevctl, --version]
+  register: proxmox_vgpu_mdev_mdevctl
+  changed_when: false
+  failed_when: false
+
+- name: Configure mediated device
+  when: proxmox_vgpu_mdev_apply | bool
+  block:
+    - name: Require mdevctl
+      ansible.builtin.assert:
+        that: proxmox_vgpu_mdev_mdevctl.rc == 0
+        fail_msg: mdevctl is unavailable; complete the Proxmox vGPU host bootstrap and reboot first.
+
+    - name: List supported mediated-device types
+      ansible.builtin.command:
+        argv: [mdevctl, types, --parent, "{{ proxmox_vgpu_mdev_parent }}"]
+      register: proxmox_vgpu_mdev_types
+      changed_when: false
+
+    - name: Validate requested mediated-device type
+      ansible.builtin.assert:
+        that: proxmox_vgpu_mdev_types.stdout is search(proxmox_vgpu_mdev_type)
+        fail_msg: Requested mediated-device type is not exposed by this parent device.
+
+    - name: Check mediated-device definition
+      ansible.builtin.command:
+        argv: [mdevctl, list, --defined, --uuid, "{{ proxmox_vgpu_mdev_uuid }}"]
+      register: proxmox_vgpu_mdev_definition
+      changed_when: false
+      failed_when: false
+
+    - name: Define mediated device
+      ansible.builtin.command:
+        argv:
+          - mdevctl
+          - define
+          - --uuid
+          - "{{ proxmox_vgpu_mdev_uuid }}"
+          - --parent
+          - "{{ proxmox_vgpu_mdev_parent }}"
+          - --type
+          - "{{ proxmox_vgpu_mdev_type }}"
+          - --auto
+      when: proxmox_vgpu_mdev_definition.rc != 0
+      changed_when: true
+
+    - name: Check active mediated device
+      ansible.builtin.stat:
+        path: "/sys/bus/mdev/devices/{{ proxmox_vgpu_mdev_uuid }}"
+      register: proxmox_vgpu_mdev_active
+
+    - name: Start mediated device
+      ansible.builtin.command:
+        argv: [mdevctl, start, --uuid, "{{ proxmox_vgpu_mdev_uuid }}"]
+      when: not proxmox_vgpu_mdev_active.stat.exists
+      changed_when: true

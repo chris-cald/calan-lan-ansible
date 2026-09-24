@@ -1,0 +1,12 @@
+---
+- name: Require explicit Proxmox vGPU host approval
+  when: proxmox_vgpu_host_apply | bool
+  ansible.builtin.assert:
+    that:
+      - proxmox_vgpu_host_confirmation == proxmox_vgpu_host_confirmation_value
+      - proxmox_vgpu_host_reboot | bool
+      - proxmox_vgpu_host_manager_path | length > 0
+      - proxmox_vgpu_host_manager_sha256 is match('^[a-fA-F0-9]{64}$')
+    fail_msg: >-
+      Proxmox vGPU host mutation requires a typed confirmation, approved reboot,
+      and a SHA-256-verified NVIDIA vGPU Manager artifact.

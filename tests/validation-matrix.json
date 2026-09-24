@@ -8,6 +8,26 @@
       "command": "ANSIBLE_ROLES_PATH=$PWD/roles ansible-playbook -i 'localhost,' --syntax-check roles/sudo/tests/test.yml"
     },
     {
+      "pattern": "roles/proxmox_vgpu_host/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/proxmox_vgpu_mdev/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "roles/proxmox_vgpu_unlock/**/*.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
+      "pattern": "playbooks/proxmox-vgpu.yml",
+      "tier": "guarded-mutation",
+      "evidence": "discovery"
+    },
+    {
       "pattern": "roles/proxmox_ve/**/*.yml",
       "tier": "guarded-mutation",
       "evidence": "discovery"

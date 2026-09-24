@@ -1,0 +1,41 @@
+---
+- name: Update initramfs
+  listen: update initramfs
+  ansible.builtin.command:
+    argv: [update-initramfs, -u, -k, all]
+  changed_when: true
+
+- name: Refresh systemd-boot configuration
+  listen: refresh Proxmox boot configuration
+  when: proxmox_vgpu_host_systemd_boot | bool
+  ansible.builtin.command:
+    argv: [proxmox-boot-tool, refresh]
+  changed_when: true
+
+- name: Refresh GRUB configuration
+  listen: refresh Proxmox boot configuration
+  when: not proxmox_vgpu_host_systemd_boot | bool
+  ansible.builtin.command:
+    argv: [update-grub]
+  changed_when: true
+
+- name: Reload systemd
+  listen: reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Record installed NVIDIA vGPU Manager artifact
+  listen: record installed NVIDIA vGPU Manager artifact
+  ansible.builtin.file:
+    path: "/var/lib/proxmox-vgpu-host/manager-{{ proxmox_vgpu_host_manager_sha256 }}"
+    state: touch
+    mode: "0644"
+
+- name: Reboot Proxmox vGPU host
+  listen: reboot Proxmox vGPU host
+  ansible.builtin.reboot:
+    msg: Rebooting to apply approved Proxmox vGPU host changes
+    connect_timeout: 5
+    pre_reboot_delay: 0
+    post_reboot_delay: 10
+  when: proxmox_vgpu_host_reboot | bool

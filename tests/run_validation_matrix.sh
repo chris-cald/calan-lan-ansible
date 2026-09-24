@@ -8,6 +8,8 @@ python3 tests/test_validation_matrix.py
 python3 tests/test_platform_transition.py
 python3 tests/test_vgpu_compatibility_manifest.py
 python3 tests/test_nvidia_vgpu_workflow.py
+python3 tests/test_proxmox_vgpu_roles.py
+python3 tests/test_proxmox_vgpu_unlock_podman.py
 python3 tests/test_vgpu_e2e_stack.py
 sh tests/public_exposure_scrub.sh
 sh tests/proxmox_util_inventory_gate.sh

@@ -1,0 +1,10 @@
+FROM scratch
+
+LABEL org.opencontainers.image.title="calan-vgpu-unlock"
+LABEL org.opencontainers.image.source="https://github.com/DualCoder/vgpu_unlock"
+LABEL org.opencontainers.image.revision="{{ proxmox_vgpu_unlock_source_revision }}"
+
+COPY vgpu_unlock-{{ proxmox_vgpu_unlock_source_revision }}/LICENSE /licenses/vgpu_unlock-MIT
+COPY vgpu_unlock-{{ proxmox_vgpu_unlock_source_revision }}/vgpu_unlock /payload/vgpu_unlock
+COPY vgpu_unlock-{{ proxmox_vgpu_unlock_source_revision }}/vgpu_unlock_hooks.c /payload/vgpu_unlock_hooks.c
+COPY vgpu_unlock-{{ proxmox_vgpu_unlock_source_revision }}/kern.ld /payload/kern.ld

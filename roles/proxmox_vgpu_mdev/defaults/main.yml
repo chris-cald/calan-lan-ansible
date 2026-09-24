@@ -1,0 +1,7 @@
+---
+proxmox_vgpu_mdev_apply: false
+proxmox_vgpu_mdev_confirmation: ""
+proxmox_vgpu_mdev_confirmation_value: apply-proxmox-vgpu-mdev
+proxmox_vgpu_mdev_parent: ""
+proxmox_vgpu_mdev_type: ""
+proxmox_vgpu_mdev_uuid: ""
