@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: plex
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plex
+  namespace: plex
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: plex}
+  template:
+    metadata:
+      labels: {app: plex}
+    spec:
+      nodeSelector:
+        vgpu.calan.lan/test: "true"
+      containers:
+        - name: plex
+          image: plexinc/pms-docker:public
+          ports:
+            - containerPort: 32400
+          env:
+            - name: PLEX_CLAIM
+              valueFrom:
+                secretKeyRef: {name: plex-claim, key: PLEX_CLAIM}
+          resources:
+            limits: {nvidia.com/gpu: 1}
+          volumeMounts:
+            - {name: config, mountPath: /config}
+            - {name: transcode, mountPath: /transcode}
+            - {name: media, mountPath: /data}
+      volumes:
+        - name: config
+          hostPath: {path: /var/mnt/plex/config, type: DirectoryOrCreate}
+        - name: transcode
+          emptyDir: {}
+        - name: media
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: plex
+  namespace: plex
+spec:
+  type: LoadBalancer
+  selector: {app: plex}
+  ports:
+    - {name: plex, port: 32400, targetPort: 32400}
