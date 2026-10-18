@@ -22,6 +22,8 @@ spec:
     spec:
       nodeSelector:
         vgpu.calan.lan/test: "true"
+      tolerations:
+        - operator: Exists
       containers:
         - name: plex
           image: plexinc/pms-docker:public
