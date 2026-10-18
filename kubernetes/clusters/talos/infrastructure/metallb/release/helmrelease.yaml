@@ -14,6 +14,13 @@ spec:
         name: metallb
         namespace: flux-system
       interval: 1h
+  values:
+    controller:
+      tolerations:
+        - operator: Exists
+    speaker:
+      tolerations:
+        - operator: Exists
   install:
     remediation:
       retries: 3
